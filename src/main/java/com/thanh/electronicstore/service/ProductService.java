@@ -73,20 +73,30 @@ public class ProductService {
         .orElseThrow(() -> new ProductNotFoundException(productId));
   }
 
-  public void createProduct(ProductDTO productDTO) {
+  public ProductDTO createProduct(ProductDTO productDTO) {
     Product newProduct =
         Product.builder()
             .name(productDTO.getName())
+            .description(productDTO.getDescription())
             .category(productDTO.getCategory())
             .price(productDTO.getPrice())
             .stock(productDTO.getStock())
+            .available(productDTO.getAvailable())
+            .deals(productDTO.getDeals() != null ? productDTO.getDeals().stream().map(dealDTO -> Deal.builder()
+                .description(dealDTO.getDescription())
+                .type(DealType.valueOf(dealDTO.getType()))
+                .expiration(LocalDateTime.parse(dealDTO.getExpiration()))
+                .discountValue(dealDTO.getDiscountValue())
+                .build()).toList() : null)
             .build();
-    productRepository.save(newProduct);
-    logger.info("Product created with ID: {}", newProduct.getId());
+
+    Product savedProduct = productRepository.save(newProduct);
+    logger.info("Product created with ID: {}", savedProduct.getId());
+    return savedProduct.toDto();
   }
 
   @Transactional
-  public void addDeals(List<DealDTO> dealDTOs, String productId) {
+  public ProductDTO addDeals(List<DealDTO> dealDTOs, String productId) {
     UUID productUUID = UUID.fromString(productId);
     Product product =
         productRepository
@@ -112,8 +122,8 @@ public class ProductService {
         throw new InvalidDealException("Invalid expiration date format: " + dto.getExpiration(), e);
       }
     }
-
     dealRepository.saveAll(deals);
+
     if (product.getDeals() == null) {
       product.setDeals(new ArrayList<>());
     }
@@ -121,6 +131,7 @@ public class ProductService {
     productRepository.save(product);
 
     logger.info("Successfully added {} deal(s) to product ID: {}", deals.size(), productId);
+    return product.toDto();
   }
 
   @Transactional

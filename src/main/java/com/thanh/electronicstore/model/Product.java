@@ -1,6 +1,7 @@
 package com.thanh.electronicstore.model;
 
 import com.thanh.electronicstore.dto.ProductDTO;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -37,7 +38,7 @@ public class Product {
   @Column(nullable = false)
   private BigDecimal price;
 
-  @ManyToMany
+  @ManyToMany(cascade = CascadeType.PERSIST)
   @JoinTable(
       name = "product_deal",
       joinColumns = @JoinColumn(name = "product_id"),

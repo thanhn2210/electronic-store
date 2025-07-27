@@ -4,6 +4,7 @@ import com.thanh.electronicstore.dto.DealDTO;
 import com.thanh.electronicstore.dto.ProductDTO;
 import com.thanh.electronicstore.dto.ProductFilterCriteria;
 import com.thanh.electronicstore.service.ProductService;
+import java.net.URI;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,21 +34,20 @@ public class ProductController {
   }
 
   @GetMapping("/{id}")
-  public ResponseEntity<ProductDTO> getProductById(@PathVariable String productId) {
-    return ResponseEntity.ok(productService.getProductById(productId));
+  public ResponseEntity<ProductDTO> getProductById(@PathVariable String id) {
+    return ResponseEntity.ok(productService.getProductById(id));
   }
 
   @PostMapping
-  public ResponseEntity<Void> createProduct(@RequestBody ProductDTO productDTO) {
-    productService.createProduct(productDTO);
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+  public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO productDTO) {
+    ProductDTO createdProduct = productService.createProduct(productDTO);
+    return ResponseEntity.created(URI.create("/products/" + createdProduct.getId())).body(createdProduct);
   }
 
   @PostMapping("/{id}/add-deals")
-  public ResponseEntity<Void> addDeal(
-      @PathVariable String id, @RequestBody List<DealDTO> dealDTOs) {
-    productService.addDeals(dealDTOs, id);
-    return ResponseEntity.status(HttpStatus.OK).build();
+  public ResponseEntity<ProductDTO> addDeal(@PathVariable String id, @RequestBody List<DealDTO> dealDTOs) {
+    ProductDTO savedProduct = productService.addDeals(dealDTOs, id);
+    return ResponseEntity.ok(savedProduct);
   }
 
   @GetMapping("/search")
