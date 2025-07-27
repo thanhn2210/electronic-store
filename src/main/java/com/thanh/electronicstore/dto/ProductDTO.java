@@ -3,6 +3,7 @@ package com.thanh.electronicstore.dto;
 import com.thanh.electronicstore.model.ProductCategory;
 import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -23,5 +24,5 @@ public class ProductDTO {
     private BigDecimal price;
     private Integer stock;
     private Boolean available;
-    private DealDTO deal;
+    private List<DealDTO> deals;
 }

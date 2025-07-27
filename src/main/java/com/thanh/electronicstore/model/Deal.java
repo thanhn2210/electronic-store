@@ -6,16 +6,17 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.NotFound;
 
 @Entity
 @Table(name = "deal")
@@ -33,7 +34,8 @@ public class Deal {
     @Enumerated(EnumType.STRING)
     private DealType type;
     private BigDecimal discountValue;
-
+    @ManyToMany(mappedBy = "deals")
+    private List<Product> products;
 
     public DealDTO toDto() {
         return DealDTO.builder()

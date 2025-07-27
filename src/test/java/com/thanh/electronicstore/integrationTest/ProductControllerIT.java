@@ -3,6 +3,7 @@ package com.thanh.electronicstore.integrationTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -111,7 +112,6 @@ class ProductControllerIT {
 
     @Test
     void getAllProducts_shouldReturnListOfProducts() {
-        // Create product first
         ProductDTO productDTO = ProductDTO.builder()
             .id(null)
             .name("Phone")
@@ -120,7 +120,7 @@ class ProductControllerIT {
             .stock(10)
             .category(ProductCategory.PHONE)
             .available(true)
-            .deal(null)
+            .deals(null)
             .build();
         restTemplate.postForEntity("/products", productDTO, Void.class);
 
@@ -142,7 +142,7 @@ class ProductControllerIT {
             .stock(5)
             .category(ProductCategory.PHONE)
             .available(true)
-            .deal(null)
+            .deals(null)
             .build();
         ProductDTO product2 = ProductDTO.builder()
             .id(null)
@@ -152,7 +152,7 @@ class ProductControllerIT {
             .stock(2)
             .category(ProductCategory.PHONE)
             .available(true)
-            .deal(null)
+            .deals(null)
             .build();
         restTemplate.postForEntity("/products", product1, Void.class);
         restTemplate.postForEntity("/products", product2, Void.class);
@@ -175,7 +175,7 @@ class ProductControllerIT {
             .stock(3)
             .category(ProductCategory.PHONE)
             .available(true)
-            .deal(null)
+            .deals(null)
             .build();
         restTemplate.postForEntity("/products", product, Void.class);
 
@@ -190,15 +190,17 @@ class ProductControllerIT {
             .description("Summer Sale")
             .type("PERCENTAGE_DISCOUNT")
             .build();
-        restTemplate.postForEntity("/products/" + id + "/add-deal", deal, String.class);
+        restTemplate.postForEntity("/products/" + id + "/add-deals", List.of(deal), String.class);
 
-        // Validate product has updated deal
         ResponseEntity<ProductDTO[]> updated = restTemplate.getForEntity("/products", ProductDTO[].class);
         ProductDTO updatedProduct = updated.getBody()[0];
 
-        assertNotNull(updatedProduct.getDeal());
-        assertEquals("2025-07-30T00:00", updatedProduct.getDeal().getExpiration().substring(0, 16)); // giữ đúng định dạng
-        assertEquals("Summer Sale", updatedProduct.getDeal().getDescription());
-        assertEquals("PERCENTAGE_DISCOUNT", updatedProduct.getDeal().getType());
+        assertNotNull(updatedProduct.getDeals());
+        assertFalse(updatedProduct.getDeals().isEmpty());
+
+        DealDTO addedDeal = updatedProduct.getDeals().get(0);
+        assertEquals("2025-07-30T00:00", addedDeal.getExpiration().substring(0, 16));
+        assertEquals("Summer Sale", addedDeal.getDescription());
+        assertEquals("PERCENTAGE_DISCOUNT", addedDeal.getType());
     }
 }

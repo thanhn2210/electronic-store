@@ -129,7 +129,6 @@ class BasketServiceTest {
         });
 
         assertEquals("Cannot modify a basket that has already been checked out", exception.getMessage());
-        verify(productService, never()).update(any());
         verify(basketRepository, never()).save(any());
     }
 

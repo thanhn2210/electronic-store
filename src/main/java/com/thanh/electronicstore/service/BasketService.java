@@ -7,6 +7,7 @@ import com.thanh.electronicstore.dto.ReceiptItemDTO;
 import com.thanh.electronicstore.model.Basket;
 import com.thanh.electronicstore.model.BasketItem;
 import com.thanh.electronicstore.model.BasketStatus;
+import com.thanh.electronicstore.model.Deal;
 import com.thanh.electronicstore.model.Product;
 import com.thanh.electronicstore.repository.BasketRepository;
 import jakarta.transaction.Transactional;
@@ -131,15 +132,26 @@ public class BasketService {
         Basket basket = basketOptional.get();
         List<ReceiptItemDTO> receiptItems = basket.getBasketItems().stream().map(basketItem -> {
             Product product = basketItem.getProduct();
-            BigDecimal originalPrice = product.getPrice().multiply(BigDecimal.valueOf(basketItem.getQuantity()));
-            BigDecimal discount = dealCalculatorService.calculateDiscount(product.getDeal(), product.getPrice(), basketItem.getQuantity());
-            BigDecimal finalPrice = originalPrice.subtract(discount);
+            int quantity = basketItem.getQuantity();
+            BigDecimal unitPrice = product.getPrice();
+            BigDecimal originalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+
+            BigDecimal totalDiscount = BigDecimal.ZERO;
+            if (product.getDeals() != null) {
+                for (Deal deal : product.getDeals()) {
+                    totalDiscount = totalDiscount.add(
+                        dealCalculatorService.calculateDiscount(deal, unitPrice, quantity)
+                    );
+                }
+            }
+
+            BigDecimal finalPrice = originalPrice.subtract(totalDiscount);
 
             return ReceiptItemDTO.builder()
                 .productName(product.getName())
-                .quantity(basketItem.getQuantity())
+                .quantity(quantity)
                 .originalPrice(originalPrice)
-                .discount(discount)
+                .discount(totalDiscount)
                 .finalPrice(finalPrice)
                 .build();
         }).toList();

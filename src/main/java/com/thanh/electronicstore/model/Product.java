@@ -7,9 +7,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,9 +38,13 @@ public class Product {
     private ProductCategory category;
     @Column(nullable = false)
     private BigDecimal price;
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "deal_id")
-    private Deal deal;
+    @ManyToMany
+    @JoinTable(
+        name = "product_deal",
+        joinColumns = @JoinColumn(name = "product_id"),
+        inverseJoinColumns = @JoinColumn(name = "deal_id")
+    )
+    private List<Deal> deals;
 
     private int stock;
     private Boolean available;
@@ -51,7 +59,7 @@ public class Product {
             .stock(this.stock)
             .available(this.available)
             .description(this.description)
-            .deal(this.deal != null ? this.deal.toDto() : null)
+            .deals(this.deals != null ? this.deals.stream().map(Deal::toDto).toList() : null)
             .build();
     }
 }

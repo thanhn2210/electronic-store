@@ -3,12 +3,11 @@ package com.thanh.electronicstore.controller;
 import com.thanh.electronicstore.dto.DealDTO;
 import com.thanh.electronicstore.dto.ProductDTO;
 import com.thanh.electronicstore.dto.ProductFilterCriteria;
-import com.thanh.electronicstore.model.Product;
 import com.thanh.electronicstore.service.ProductService;
-import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,15 +32,20 @@ public class ProductController {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable String productId) {
+        return ResponseEntity.ok(productService.getProductById(productId));
+    }
+
     @PostMapping
     public ResponseEntity<Void> createProduct(@RequestBody ProductDTO productDTO) {
         productService.createProduct(productDTO);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    @PostMapping("/{id}/add-deal")
-    public ResponseEntity<String> addDeal(@PathVariable String id, @RequestBody DealDTO dealDTO) {
-        productService.addDeal(dealDTO, id);
+    @PostMapping("/{id}/add-deals")
+    public ResponseEntity<Void> addDeal(@PathVariable String id, @RequestBody List<DealDTO> dealDTOs) {
+        productService.addDeals(dealDTOs, id);
         return ResponseEntity.status(HttpStatus.OK).build();
     }
 
@@ -53,5 +57,11 @@ public class ProductController {
     ) {
         List<ProductDTO> products = productService.filterProducts(criteria, page, size);
         return ResponseEntity.ok(products);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable String id) {
+        productService.deleteProduct(id);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

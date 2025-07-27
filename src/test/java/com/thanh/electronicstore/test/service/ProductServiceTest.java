@@ -16,6 +16,7 @@ import com.thanh.electronicstore.model.Deal;
 import com.thanh.electronicstore.model.DealType;
 import com.thanh.electronicstore.model.Product;
 import com.thanh.electronicstore.model.ProductCategory;
+import com.thanh.electronicstore.repository.DealRepository;
 import com.thanh.electronicstore.repository.ProductRepository;
 import com.thanh.electronicstore.service.ProductService;
 import java.math.BigDecimal;
@@ -39,6 +40,8 @@ class ProductServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+    @Mock
+    private DealRepository dealRepository;
 
     @InjectMocks
     private ProductService productService;
@@ -88,9 +91,8 @@ class ProductServiceTest {
     }
 
     @Test
-    void addDeal_shouldAddDealToProduct() {
+    void addDeal_shouldAddDealsToProduct() {
         UUID productId = UUID.randomUUID();
-        UUID fakeDealId = UUID.randomUUID();
 
         Product product = Product.builder()
             .id(productId)
@@ -98,13 +100,13 @@ class ProductServiceTest {
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        when(productRepository.save(any())).thenAnswer(invocation -> {
-            Product savedProduct = invocation.getArgument(0);
-            if (savedProduct.getDeal() != null && savedProduct.getDeal().getId() == null) {
-                savedProduct.getDeal().setId(fakeDealId);
-            }
-            return savedProduct;
-        });
+//        when(productRepository.save(any())).thenAnswer(invocation -> {
+//            Product savedProduct = invocation.getArgument(0);
+//            if (savedProduct.getDeals() != null && savedProduct.getDeal().getId() == null) {
+//                savedProduct.getDeal().setId(fakeDealId);
+//            }
+//            return savedProduct;
+//        });
 
         DealDTO dealDTO = DealDTO.builder()
             .description("Flash Sale")
@@ -112,28 +114,26 @@ class ProductServiceTest {
             .expiration("2025-12-25T00:00:00")
             .build();
 
-        String returnedDealId = productService.addDeal(dealDTO, productId.toString());
+        productService.addDeals(List.of(dealDTO), productId.toString());
 
         ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
         verify(productRepository).save(productCaptor.capture());
 
         Product saved = productCaptor.getValue();
-        assertThat(saved.getDeal())
+        assertThat(saved.getDeals())
             .usingRecursiveComparison()
             .ignoringFields("id")
             .isEqualTo(
-                Deal.builder()
+                List.of(Deal.builder()
                     .description("Flash Sale")
                     .type(DealType.PERCENTAGE_DISCOUNT)
                     .expiration(LocalDateTime.parse("2025-12-25T00:00:00"))
-                    .build()
+                    .build())
             );
-
-        assertThat(UUID.fromString(returnedDealId)).isEqualTo(fakeDealId);
     }
 
     @Test
-    void addDeal_shouldThrowIfProductNotFound() {
+    void addDeals_shouldThrowIfProductNotFound() {
         UUID id = UUID.randomUUID();
         when(productRepository.findById(id)).thenReturn(Optional.empty());
 
@@ -142,11 +142,11 @@ class ProductServiceTest {
             .expiration("2030-12-01T00:00:00")
             .build();
 
-        assertThrows(RuntimeException.class, () -> productService.addDeal(dto, id.toString()));
+        assertThrows(RuntimeException.class, () -> productService.addDeals(List.of(dto), id.toString()));
     }
 
     @Test
-    void addDeal_shouldThrowIfDateInvalid() {
+    void addDeals_shouldThrowIfDateInvalid() {
         UUID id = UUID.randomUUID();
         Product product = Product.builder().id(id).build();
         when(productRepository.findById(id)).thenReturn(Optional.of(product));
@@ -156,7 +156,7 @@ class ProductServiceTest {
             .expiration("not-a-date")
             .build();
 
-        assertThrows(IllegalArgumentException.class, () -> productService.addDeal(dto, id.toString()));
+        assertThrows(IllegalArgumentException.class, () -> productService.addDeals(List.of(dto), id.toString()));
     }
 
     @Test
