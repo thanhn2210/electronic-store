@@ -3,7 +3,9 @@ package com.thanh.electronicstore.test.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -22,6 +24,7 @@ import com.thanh.electronicstore.repository.ProductRepository;
 import com.thanh.electronicstore.service.ProductService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -77,7 +80,21 @@ class ProductServiceTest {
             .category(ProductCategory.LAPTOP)
             .price(BigDecimal.valueOf(500))
             .stock(10)
+            .available(true)
             .build();
+
+    Product mockSavedProduct =
+        Product.builder()
+            .id(UUID.randomUUID())
+            .name("Phone")
+            .category(ProductCategory.LAPTOP)
+            .price(BigDecimal.valueOf(500))
+            .stock(10)
+            .available(true)
+            .deals(new ArrayList<>())
+            .build();
+
+    when(productRepository.save(any(Product.class))).thenReturn(mockSavedProduct);
 
     productService.createProduct(dto);
 
@@ -89,15 +106,28 @@ class ProductServiceTest {
     assertEquals(ProductCategory.LAPTOP, saved.getCategory());
     assertEquals(10, saved.getStock());
     assertEquals(BigDecimal.valueOf(500), saved.getPrice());
+    assertTrue(saved.getAvailable());
   }
 
   @Test
   void addDeal_shouldAddDealsToProduct() {
     UUID productId = UUID.randomUUID();
 
-    Product product = Product.builder().id(productId).build();
+    Product product = Product.builder().id(productId).deals(new ArrayList<>()).build();
 
     when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+    when(productRepository.save(any(Product.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    Deal savedDeal =
+        Deal.builder()
+            .id(UUID.randomUUID())
+            .description("Flash Sale")
+            .type(DealType.PERCENTAGE_DISCOUNT)
+            .expiration(LocalDateTime.parse("2025-12-25T00:00:00"))
+            .build();
+
+    when(dealRepository.saveAll(anyList())).thenReturn(List.of(savedDeal));
 
     DealDTO dealDTO =
         DealDTO.builder()
@@ -115,13 +145,7 @@ class ProductServiceTest {
     assertThat(saved.getDeals())
         .usingRecursiveComparison()
         .ignoringFields("id")
-        .isEqualTo(
-            List.of(
-                Deal.builder()
-                    .description("Flash Sale")
-                    .type(DealType.PERCENTAGE_DISCOUNT)
-                    .expiration(LocalDateTime.parse("2025-12-25T00:00:00"))
-                    .build()));
+        .isEqualTo(List.of(savedDeal));
   }
 
   @Test

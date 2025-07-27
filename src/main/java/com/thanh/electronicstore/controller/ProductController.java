@@ -41,11 +41,13 @@ public class ProductController {
   @PostMapping
   public ResponseEntity<ProductDTO> createProduct(@RequestBody ProductDTO productDTO) {
     ProductDTO createdProduct = productService.createProduct(productDTO);
-    return ResponseEntity.created(URI.create("/products/" + createdProduct.getId())).body(createdProduct);
+    return ResponseEntity.created(URI.create("/products/" + createdProduct.getId()))
+        .body(createdProduct);
   }
 
   @PostMapping("/{id}/add-deals")
-  public ResponseEntity<ProductDTO> addDeal(@PathVariable String id, @RequestBody List<DealDTO> dealDTOs) {
+  public ResponseEntity<ProductDTO> addDeal(
+      @PathVariable String id, @RequestBody List<DealDTO> dealDTOs) {
     ProductDTO savedProduct = productService.addDeals(dealDTOs, id);
     return ResponseEntity.ok(savedProduct);
   }
