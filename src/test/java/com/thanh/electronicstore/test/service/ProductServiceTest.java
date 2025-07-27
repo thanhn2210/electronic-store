@@ -100,14 +100,6 @@ class ProductServiceTest {
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-//        when(productRepository.save(any())).thenAnswer(invocation -> {
-//            Product savedProduct = invocation.getArgument(0);
-//            if (savedProduct.getDeals() != null && savedProduct.getDeal().getId() == null) {
-//                savedProduct.getDeal().setId(fakeDealId);
-//            }
-//            return savedProduct;
-//        });
-
         DealDTO dealDTO = DealDTO.builder()
             .description("Flash Sale")
             .type("PERCENTAGE_DISCOUNT")

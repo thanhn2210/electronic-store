@@ -3,6 +3,8 @@ package com.thanh.electronicstore.service;
 import com.thanh.electronicstore.dto.DealDTO;
 import com.thanh.electronicstore.dto.ProductDTO;
 import com.thanh.electronicstore.dto.ProductFilterCriteria;
+import com.thanh.electronicstore.exception.InvalidDealException;
+import com.thanh.electronicstore.exception.ProductNotFoundException;
 import com.thanh.electronicstore.model.Deal;
 import com.thanh.electronicstore.model.DealType;
 import com.thanh.electronicstore.model.Product;
@@ -49,7 +51,7 @@ public class ProductService {
     }
 
     public ProductDTO getProductById(String id) {
-       Product product = productRepository.findById(UUID.fromString(id)).orElseThrow(() -> new RuntimeException("Product is not found!"));
+       Product product = productRepository.findById(UUID.fromString(id)).orElseThrow(() -> new ProductNotFoundException(id));
        return product.toDto();
     }
 
@@ -59,7 +61,7 @@ public class ProductService {
 
     public Product getProductEntityById(String productId) {
         return productRepository.findById(UUID.fromString(productId))
-            .orElseThrow(() -> new RuntimeException("Product is not found"));
+            .orElseThrow(() -> new ProductNotFoundException(productId));
     }
 
     public void createProduct(ProductDTO productDTO) {
@@ -79,7 +81,7 @@ public class ProductService {
         Product product = productRepository.findById(productUUID)
             .orElseThrow(() -> {
                 logger.error("Product not found with ID: {}", productId);
-                return new RuntimeException("This product is not available");
+                return new ProductNotFoundException(productId);
             });
 
         List<Deal> deals = new ArrayList<>();
@@ -93,7 +95,7 @@ public class ProductService {
                 deals.add(deal);
             } catch (DateTimeParseException | IllegalArgumentException e) {
                 logger.error("Failed to parse deal DTO: {}", dto, e);
-                throw new IllegalArgumentException("Invalid deal data: " + dto, e);
+                throw new InvalidDealException("Invalid expiration date format: " + dto.getExpiration(), e);
             }
         }
 
@@ -112,7 +114,7 @@ public class ProductService {
         UUID uuid = UUID.fromString(productId);
         if (!productRepository.existsById(uuid)) {
             logger.error("Product not found with ID: {}", productId);
-            throw new RuntimeException("Product not found with ID: " + productId);
+            throw new ProductNotFoundException(productId);
         }
 
         productRepository.deleteById(UUID.fromString(productId));

@@ -4,6 +4,9 @@ import com.thanh.electronicstore.dto.BasketDTO;
 import com.thanh.electronicstore.dto.BasketItemDTO;
 import com.thanh.electronicstore.dto.ReceiptDTO;
 import com.thanh.electronicstore.dto.ReceiptItemDTO;
+import com.thanh.electronicstore.exception.BasketAlreadyCheckedOutException;
+import com.thanh.electronicstore.exception.BasketNotFoundException;
+import com.thanh.electronicstore.exception.ProductNotFoundException;
 import com.thanh.electronicstore.model.Basket;
 import com.thanh.electronicstore.model.BasketItem;
 import com.thanh.electronicstore.model.BasketStatus;
@@ -41,7 +44,7 @@ public class BasketService {
 
     public BasketDTO getBasket(String id) {
         Basket basket = basketRepository.findById(UUID.fromString(id))
-            .orElseThrow(() -> new RuntimeException("Basket is not found"));
+            .orElseThrow(() -> new BasketNotFoundException(id));
         return basket.toDto();
     }
 
@@ -59,7 +62,7 @@ public class BasketService {
             basketItemDTO -> {
                 Product product = productMap.get(UUID.fromString(basketItemDTO.getProductId()));
                 if (product == null) {
-                    throw new IllegalArgumentException("Product not found for id: " + basketItemDTO.getProductId());
+                    throw new ProductNotFoundException(basketItemDTO.getProductId());
                 }
                 return BasketItem.builder()
                     .product(product)
@@ -77,10 +80,10 @@ public class BasketService {
     @Transactional
     public Pair<List<BasketItemDTO>, List<BasketItemDTO>> addBasketItems(String basketId, List<BasketItemDTO> addBasketItems) {
         Basket basket = basketRepository.findById(UUID.fromString(basketId))
-            .orElseThrow(() -> new RuntimeException("Basket is not found"));
+            .orElseThrow(() -> new BasketNotFoundException(basketId));
 
         if (basket.getStatus() != BasketStatus.ACTIVE) {
-            throw new RuntimeException("Cannot modify a basket that has already been checked out");
+            throw new BasketAlreadyCheckedOutException(basketId);
         }
 
         List<BasketItemDTO> skippedItems = new ArrayList<>();
@@ -115,7 +118,7 @@ public class BasketService {
     public void removeBasketItems(String basketId, List<String> removedBasketItemIds) {
         Optional<Basket> basketOptional = basketRepository.findById(UUID.fromString(basketId));
         if (basketOptional.isEmpty()) {
-            throw new RuntimeException("Basket is not found");
+            throw new BasketNotFoundException(basketId);
         }
 
         Basket basket = basketOptional.get();
@@ -126,7 +129,7 @@ public class BasketService {
     public ReceiptDTO calculateReceipt(String basketId) {
         Optional<Basket> basketOptional = basketRepository.findById(UUID.fromString(basketId));
         if (basketOptional.isEmpty()) {
-            throw new RuntimeException("Basket not found");
+            throw new BasketNotFoundException(basketId);
         }
 
         Basket basket = basketOptional.get();
