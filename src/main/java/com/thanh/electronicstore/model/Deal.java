@@ -1,6 +1,7 @@
 package com.thanh.electronicstore.model;
 
 import com.thanh.electronicstore.dto.DealDTO;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -31,8 +32,10 @@ public class Deal {
   private LocalDateTime expiration;
 
   @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   private DealType type;
 
+  @Column(nullable = false)
   private BigDecimal discountValue;
 
   @ManyToMany(mappedBy = "deals")

@@ -6,7 +6,6 @@ import com.thanh.electronicstore.dto.ProductFilterCriteria;
 import com.thanh.electronicstore.service.ProductService;
 import java.net.URI;
 import java.util.List;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -64,6 +63,6 @@ public class ProductController {
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteProduct(@PathVariable String id) {
     productService.deleteProduct(id);
-    return ResponseEntity.status(HttpStatus.CREATED).build();
+    return ResponseEntity.ok().build();
   }
 }

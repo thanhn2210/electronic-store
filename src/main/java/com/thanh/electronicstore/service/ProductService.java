@@ -122,6 +122,7 @@ public class ProductService {
                 .description(dto.getDescription())
                 .expiration(LocalDateTime.parse(dto.getExpiration()))
                 .type(DealType.valueOf(dto.getType()))
+                .discountValue(dto.getDiscountValue())
                 .build();
         deals.add(deal);
       } catch (DateTimeParseException | IllegalArgumentException e) {

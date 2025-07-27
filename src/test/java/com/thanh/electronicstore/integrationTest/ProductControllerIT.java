@@ -161,7 +161,7 @@ class ProductControllerIT {
 
   @Test
   void addDealToProduct_shouldUpdateProductDeal() {
-    // Create product
+    // Step 1: Create
     ProductDTO product =
         ProductDTO.builder()
             .name("Laptop")
@@ -170,29 +170,33 @@ class ProductControllerIT {
             .stock(3)
             .category(ProductCategory.PHONE)
             .available(true)
-            .deals(null)
             .build();
-    restTemplate.postForEntity("/products", product, Void.class);
 
-    // Get created product
-    ResponseEntity<ProductDTO[]> getResponse =
-        restTemplate.getForEntity("/products", ProductDTO[].class);
-    ProductDTO createdProduct = getResponse.getBody()[0];
+    ResponseEntity<ProductDTO> createResponse =
+        restTemplate.postForEntity("/products", product, ProductDTO.class);
+    assertEquals(HttpStatus.CREATED, createResponse.getStatusCode());
+
+    ProductDTO createdProduct = createResponse.getBody();
+    assertNotNull(createdProduct);
     String id = createdProduct.getId();
 
-    // Create and add deal
+    // Step 2: create deal
     DealDTO deal =
         DealDTO.builder()
             .expiration("2025-07-30T00:00:00")
             .description("Summer Sale")
             .type("PERCENTAGE_DISCOUNT")
+            .discountValue(BigDecimal.valueOf(15))
             .build();
-    restTemplate.postForEntity("/products/" + id + "/add-deals", List.of(deal), String.class);
 
-    ResponseEntity<ProductDTO[]> updated =
-        restTemplate.getForEntity("/products", ProductDTO[].class);
-    ProductDTO updatedProduct = updated.getBody()[0];
+    // Step 3: add-deals
+    ResponseEntity<ProductDTO> addDealResponse =
+        restTemplate.postForEntity(
+            "/products/" + id + "/add-deals", List.of(deal), ProductDTO.class);
+    assertEquals(HttpStatus.OK, addDealResponse.getStatusCode());
 
+    ProductDTO updatedProduct = addDealResponse.getBody();
+    assertNotNull(updatedProduct);
     assertNotNull(updatedProduct.getDeals());
     assertFalse(updatedProduct.getDeals().isEmpty());
 
@@ -200,5 +204,6 @@ class ProductControllerIT {
     assertEquals("2025-07-30T00:00", addedDeal.getExpiration().substring(0, 16));
     assertEquals("Summer Sale", addedDeal.getDescription());
     assertEquals("PERCENTAGE_DISCOUNT", addedDeal.getType());
+    assertEquals(BigDecimal.valueOf(15), addedDeal.getDiscountValue());
   }
 }
