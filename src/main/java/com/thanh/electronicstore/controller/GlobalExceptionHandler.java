@@ -12,18 +12,18 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler({InvalidDealException.class, BasketAlreadyCheckedOutException.class})
-    public ResponseEntity<String> handleInvalidDealException(InvalidDealException ex) {
-        return ResponseEntity.badRequest().body(ex.getMessage());
-    }
+  @ExceptionHandler({InvalidDealException.class, BasketAlreadyCheckedOutException.class})
+  public ResponseEntity<String> handleInvalidDealException(InvalidDealException ex) {
+    return ResponseEntity.badRequest().body(ex.getMessage());
+  }
 
-    @ExceptionHandler({ProductNotFoundException.class, BasketNotFoundException.class})
-    public ResponseEntity<String> handleProductNotFound(ProductNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-    }
+  @ExceptionHandler({ProductNotFoundException.class, BasketNotFoundException.class})
+  public ResponseEntity<String> handleProductNotFound(ProductNotFoundException ex) {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+  }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleGeneralRuntime(RuntimeException ex) {
-        return ResponseEntity.internalServerError().body("Unexpected error: " + ex.getMessage());
-    }
+  @ExceptionHandler(RuntimeException.class)
+  public ResponseEntity<String> handleGeneralRuntime(RuntimeException ex) {
+    return ResponseEntity.internalServerError().body("Unexpected error: " + ex.getMessage());
+  }
 }

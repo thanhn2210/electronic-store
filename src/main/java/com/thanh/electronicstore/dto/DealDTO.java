@@ -13,9 +13,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DealDTO {
-    private String id;
-    private String description;
-    private String expiration;
-    private String type;
-    private BigDecimal discountValue;
+  private String id;
+  private String description;
+  private String expiration;
+  private String type;
+  private BigDecimal discountValue;
 }

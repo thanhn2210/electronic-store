@@ -16,13 +16,12 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductDTO {
-    @Nullable
-    private String id;
-    private String name;
-    private String description;
-    private ProductCategory category;
-    private BigDecimal price;
-    private Integer stock;
-    private Boolean available;
-    private List<DealDTO> deals;
+  @Nullable private String id;
+  private String name;
+  private String description;
+  private ProductCategory category;
+  private BigDecimal price;
+  private Integer stock;
+  private Boolean available;
+  private List<DealDTO> deals;
 }

@@ -12,8 +12,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BasketItemDTO {
-    private String id;
-    private String productId;
-    private String basketId;
-    private int quantity;
+  private String id;
+  private String productId;
+  private String basketId;
+  private int quantity;
 }

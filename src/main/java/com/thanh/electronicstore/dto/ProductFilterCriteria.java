@@ -8,8 +8,8 @@ import lombok.Data;
 @Data
 @Builder
 public class ProductFilterCriteria {
-    private ProductCategory category;
-    private BigDecimal minPrice;
-    private BigDecimal maxPrice;
-    private Boolean available;
+  private ProductCategory category;
+  private BigDecimal minPrice;
+  private BigDecimal maxPrice;
+  private Boolean available;
 }

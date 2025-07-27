@@ -26,24 +26,25 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Deal {
-    @Id
-    @GeneratedValue
-    private UUID id;
-    private String description;
-    private LocalDateTime expiration;
-    @Enumerated(EnumType.STRING)
-    private DealType type;
-    private BigDecimal discountValue;
-    @ManyToMany(mappedBy = "deals")
-    private List<Product> products;
+  @Id @GeneratedValue private UUID id;
+  private String description;
+  private LocalDateTime expiration;
 
-    public DealDTO toDto() {
-        return DealDTO.builder()
-            .id(this.id.toString())
-            .description(this.description)
-            .expiration(this.expiration.toString())
-            .type(this.type.name())
-            .discountValue(discountValue)
-            .build();
-    }
+  @Enumerated(EnumType.STRING)
+  private DealType type;
+
+  private BigDecimal discountValue;
+
+  @ManyToMany(mappedBy = "deals")
+  private List<Product> products;
+
+  public DealDTO toDto() {
+    return DealDTO.builder()
+        .id(this.id.toString())
+        .description(this.description)
+        .expiration(this.expiration.toString())
+        .type(this.type.name())
+        .discountValue(discountValue)
+        .build();
+  }
 }

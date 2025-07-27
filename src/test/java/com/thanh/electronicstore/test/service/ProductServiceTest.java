@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import com.thanh.electronicstore.dto.DealDTO;
 import com.thanh.electronicstore.dto.ProductDTO;
 import com.thanh.electronicstore.dto.ProductFilterCriteria;
+import com.thanh.electronicstore.exception.InvalidDealException;
 import com.thanh.electronicstore.model.Deal;
 import com.thanh.electronicstore.model.DealType;
 import com.thanh.electronicstore.model.Product;
@@ -38,145 +39,143 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
 
-    @Mock
-    private ProductRepository productRepository;
-    @Mock
-    private DealRepository dealRepository;
+  @Mock private ProductRepository productRepository;
+  @Mock private DealRepository dealRepository;
 
-    @InjectMocks
-    private ProductService productService;
+  @InjectMocks private ProductService productService;
 
-    @Test
-    void getProductEntityById_shouldReturnProductWhenFound() {
-        UUID id = UUID.randomUUID();
-        Product product = Product.builder()
+  @Test
+  void getProductEntityById_shouldReturnProductWhenFound() {
+    UUID id = UUID.randomUUID();
+    Product product =
+        Product.builder()
             .id(id)
             .name("Test Product")
             .stock(10)
             .price(BigDecimal.valueOf(11.5))
             .category(ProductCategory.LAPTOP)
             .build();
-        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+    when(productRepository.findById(id)).thenReturn(Optional.of(product));
 
-        Product actualProduct = productService.getProductEntityById(String.valueOf(id));
+    Product actualProduct = productService.getProductEntityById(String.valueOf(id));
 
-        assertThat(actualProduct).isEqualTo(product);
-    }
+    assertThat(actualProduct).isEqualTo(product);
+  }
 
-    @Test
-    void getProductEntityById_shouldThrowExceptionWhenNotFound() {
-        UUID id = UUID.randomUUID();
-        assertThrows(RuntimeException.class, () -> productService.getProductEntityById(String.valueOf(id)));
-    }
+  @Test
+  void getProductEntityById_shouldThrowExceptionWhenNotFound() {
+    UUID id = UUID.randomUUID();
+    assertThrows(
+        RuntimeException.class, () -> productService.getProductEntityById(String.valueOf(id)));
+  }
 
-    @Test
-    void createProduct_shouldCreateProduct() {
-        ProductDTO dto = ProductDTO.builder()
+  @Test
+  void createProduct_shouldCreateProduct() {
+    ProductDTO dto =
+        ProductDTO.builder()
             .name("Phone")
             .category(ProductCategory.LAPTOP)
             .price(BigDecimal.valueOf(500))
             .stock(10)
             .build();
 
-        productService.createProduct(dto);
+    productService.createProduct(dto);
 
-        ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
-        verify(productRepository, times(1)).save(captor.capture());
+    ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
+    verify(productRepository, times(1)).save(captor.capture());
 
-        Product saved = captor.getValue();
-        assertEquals("Phone", saved.getName());
-        assertEquals(ProductCategory.LAPTOP, saved.getCategory());
-        assertEquals(10, saved.getStock());
-        assertEquals(BigDecimal.valueOf(500), saved.getPrice());
-    }
+    Product saved = captor.getValue();
+    assertEquals("Phone", saved.getName());
+    assertEquals(ProductCategory.LAPTOP, saved.getCategory());
+    assertEquals(10, saved.getStock());
+    assertEquals(BigDecimal.valueOf(500), saved.getPrice());
+  }
 
-    @Test
-    void addDeal_shouldAddDealsToProduct() {
-        UUID productId = UUID.randomUUID();
+  @Test
+  void addDeal_shouldAddDealsToProduct() {
+    UUID productId = UUID.randomUUID();
 
-        Product product = Product.builder()
-            .id(productId)
-            .build();
+    Product product = Product.builder().id(productId).build();
 
-        when(productRepository.findById(productId)).thenReturn(Optional.of(product));
+    when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        DealDTO dealDTO = DealDTO.builder()
+    DealDTO dealDTO =
+        DealDTO.builder()
             .description("Flash Sale")
             .type("PERCENTAGE_DISCOUNT")
             .expiration("2025-12-25T00:00:00")
             .build();
 
-        productService.addDeals(List.of(dealDTO), productId.toString());
+    productService.addDeals(List.of(dealDTO), productId.toString());
 
-        ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
-        verify(productRepository).save(productCaptor.capture());
+    ArgumentCaptor<Product> productCaptor = ArgumentCaptor.forClass(Product.class);
+    verify(productRepository).save(productCaptor.capture());
 
-        Product saved = productCaptor.getValue();
-        assertThat(saved.getDeals())
-            .usingRecursiveComparison()
-            .ignoringFields("id")
-            .isEqualTo(
-                List.of(Deal.builder()
+    Product saved = productCaptor.getValue();
+    assertThat(saved.getDeals())
+        .usingRecursiveComparison()
+        .ignoringFields("id")
+        .isEqualTo(
+            List.of(
+                Deal.builder()
                     .description("Flash Sale")
                     .type(DealType.PERCENTAGE_DISCOUNT)
                     .expiration(LocalDateTime.parse("2025-12-25T00:00:00"))
-                    .build())
-            );
-    }
+                    .build()));
+  }
 
-    @Test
-    void addDeals_shouldThrowIfProductNotFound() {
-        UUID id = UUID.randomUUID();
-        when(productRepository.findById(id)).thenReturn(Optional.empty());
+  @Test
+  void addDeals_shouldThrowIfProductNotFound() {
+    UUID id = UUID.randomUUID();
+    when(productRepository.findById(id)).thenReturn(Optional.empty());
 
-        DealDTO dto = DealDTO.builder()
-            .description("Cyber Deal")
-            .expiration("2030-12-01T00:00:00")
-            .build();
+    DealDTO dto =
+        DealDTO.builder().description("Cyber Deal").expiration("2030-12-01T00:00:00").build();
 
-        assertThrows(RuntimeException.class, () -> productService.addDeals(List.of(dto), id.toString()));
-    }
+    assertThrows(
+        RuntimeException.class, () -> productService.addDeals(List.of(dto), id.toString()));
+  }
 
-    @Test
-    void addDeals_shouldThrowIfDateInvalid() {
-        UUID id = UUID.randomUUID();
-        Product product = Product.builder().id(id).build();
-        when(productRepository.findById(id)).thenReturn(Optional.of(product));
+  @Test
+  void addDeals_shouldThrowIfDateInvalid() {
+    UUID id = UUID.randomUUID();
+    Product product = Product.builder().id(id).build();
+    when(productRepository.findById(id)).thenReturn(Optional.of(product));
 
-        DealDTO dto = DealDTO.builder()
-            .description("Invalid Deal")
-            .expiration("not-a-date")
-            .build();
+    DealDTO dto = DealDTO.builder().description("Invalid Deal").expiration("not-a-date").build();
 
-        assertThrows(IllegalArgumentException.class, () -> productService.addDeals(List.of(dto), id.toString()));
-    }
+    assertThrows(
+        InvalidDealException.class, () -> productService.addDeals(List.of(dto), id.toString()));
+  }
 
-    @Test
-    void deleteProduct_shouldDeleteIfExist() {
-        UUID id = UUID.randomUUID();
-        when(productRepository.existsById(id)).thenReturn(true);
-        productService.deleteProduct(String.valueOf(id));
-        verify(productRepository).deleteById(id);
-    }
+  @Test
+  void deleteProduct_shouldDeleteIfExist() {
+    UUID id = UUID.randomUUID();
+    when(productRepository.existsById(id)).thenReturn(true);
+    productService.deleteProduct(String.valueOf(id));
+    verify(productRepository).deleteById(id);
+  }
 
-    @Test
-    void deleteProduct_shouldThrowExceptionIfNotExist() {
-        String productId = UUID.randomUUID().toString();
-        when(productRepository.existsById(UUID.fromString(productId))).thenReturn(false);
-        assertThrows(RuntimeException.class, () -> productService.deleteProduct(productId));
-    }
+  @Test
+  void deleteProduct_shouldThrowExceptionIfNotExist() {
+    String productId = UUID.randomUUID().toString();
+    when(productRepository.existsById(UUID.fromString(productId))).thenReturn(false);
+    assertThrows(RuntimeException.class, () -> productService.deleteProduct(productId));
+  }
 
-    @Test
-    void filterProducts_shouldReturnFilteredProducts() {
-        // Arrange
-        ProductFilterCriteria criteria = ProductFilterCriteria.builder()
+  @Test
+  void filterProducts_shouldReturnFilteredProducts() {
+    // Arrange
+    ProductFilterCriteria criteria =
+        ProductFilterCriteria.builder()
             .category(ProductCategory.PHONE)
             .minPrice(BigDecimal.valueOf(100))
             .maxPrice(BigDecimal.valueOf(600))
             .available(true)
             .build();
 
-        Product p1 = Product.builder()
+    Product p1 =
+        Product.builder()
             .id(UUID.randomUUID())
             .name("Phone")
             .price(BigDecimal.valueOf(500))
@@ -184,14 +183,16 @@ class ProductServiceTest {
             .stock(10)
             .build();
 
-        Product p2 = Product.builder()
+    Product p2 =
+        Product.builder()
             .id(UUID.randomUUID())
             .name("Tablet")
             .price(BigDecimal.valueOf(1000))
             .category(ProductCategory.PHONE)
             .stock(5)
             .build();
-        Product p3 = Product.builder()
+    Product p3 =
+        Product.builder()
             .id(UUID.randomUUID())
             .name("Tablet 1")
             .price(BigDecimal.valueOf(400))
@@ -199,28 +200,28 @@ class ProductServiceTest {
             .stock(5)
             .build();
 
-        List<Product> mockResult = List.of(p1, p3);
-        Page<Product> mockPage = new PageImpl<>(mockResult);
+    List<Product> mockResult = List.of(p1, p3);
+    Page<Product> mockPage = new PageImpl<>(mockResult);
 
-        when(productRepository.findByFilter(
+    when(productRepository.findByFilter(
             eq(ProductCategory.PHONE),
             eq(BigDecimal.valueOf(100)),
             eq(BigDecimal.valueOf(600)),
             eq(true),
-            any(Pageable.class))
-        ).thenReturn(mockPage);
+            any(Pageable.class)))
+        .thenReturn(mockPage);
 
-        List<ProductDTO> result = productService.filterProducts(criteria, 0, 10);
+    List<ProductDTO> result = productService.filterProducts(criteria, 0, 10);
 
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(ProductDTO::getName).containsExactly("Phone", "Tablet 1");
+    assertThat(result).hasSize(2);
+    assertThat(result).extracting(ProductDTO::getName).containsExactly("Phone", "Tablet 1");
 
-        verify(productRepository).findByFilter(
+    verify(productRepository)
+        .findByFilter(
             eq(ProductCategory.PHONE),
             eq(BigDecimal.valueOf(100)),
             eq(BigDecimal.valueOf(600)),
             eq(true),
-            eq(PageRequest.of(0, 10))
-        );
-    }
+            eq(PageRequest.of(0, 10)));
+  }
 }

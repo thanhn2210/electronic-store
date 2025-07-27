@@ -14,20 +14,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/deals")
 public class DealController {
-    private final DealService dealService;
+  private final DealService dealService;
 
-    public DealController(DealService dealService) {
-        this.dealService = dealService;
-    }
+  public DealController(DealService dealService) {
+    this.dealService = dealService;
+  }
 
-    @GetMapping
-    public ResponseEntity<List<DealDTO>> getDeals() {
-        return ResponseEntity.ok(dealService.getAllDeals());
-    }
+  @GetMapping
+  public ResponseEntity<List<DealDTO>> getDeals() {
+    return ResponseEntity.ok(dealService.getAllDeals());
+  }
 
-    @PostMapping("/{id}")
-    public ResponseEntity<Void> updateDeal(@PathVariable String id, @RequestBody DealDTO dealDTO) {
-        dealService.updateDeal(id, dealDTO);
-        return ResponseEntity.ok().build();
-    }
+  @PostMapping("/{id}")
+  public ResponseEntity<Void> updateDeal(@PathVariable String id, @RequestBody DealDTO dealDTO) {
+    dealService.updateDeal(id, dealDTO);
+    return ResponseEntity.ok().build();
+  }
 }

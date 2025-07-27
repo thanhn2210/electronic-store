@@ -23,26 +23,24 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class BasketItem {
-    @Id
-    @GeneratedValue
-    private UUID id;
+  @Id @GeneratedValue private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "product_id")
-    private Product product;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "product_id")
+  private Product product;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "basket_id")
-    private Basket basket;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "basket_id")
+  private Basket basket;
 
-    private int quantity;
+  private int quantity;
 
-    public BasketItemDTO toDto() {
-        return BasketItemDTO.builder()
-            .id(id.toString())
-            .productId(product.getId().toString())
-            .basketId(basket.getId().toString())
-            .quantity(quantity)
-            .build();
-    }
+  public BasketItemDTO toDto() {
+    return BasketItemDTO.builder()
+        .id(id.toString())
+        .productId(product.getId().toString())
+        .basketId(basket.getId().toString())
+        .quantity(quantity)
+        .build();
+  }
 }

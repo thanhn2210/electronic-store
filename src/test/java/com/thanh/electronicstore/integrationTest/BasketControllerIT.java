@@ -37,34 +37,30 @@ import org.springframework.test.context.ActiveProfiles;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class BasketControllerIT {
 
-    @LocalServerPort
-    private int port;
+  @LocalServerPort private int port;
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+  @Autowired private TestRestTemplate restTemplate;
 
-    private String baseUrl;
+  private String baseUrl;
 
-    @Autowired
-    private BasketRepository basketRepository;
+  @Autowired private BasketRepository basketRepository;
 
-    @Autowired
-    private BasketItemRepository basketItemRepository;
+  @Autowired private BasketItemRepository basketItemRepository;
 
-    @Autowired
-    private ProductRepository productRepository;
+  @Autowired private ProductRepository productRepository;
 
-    private List<ProductDTO> initializedProducts;
+  private List<ProductDTO> initializedProducts;
 
-    @BeforeEach
-    void setUp() {
-        baseUrl = "http://localhost:" + port + "/baskets";
+  @BeforeEach
+  void setUp() {
+    baseUrl = "http://localhost:" + port + "/baskets";
 
-        basketItemRepository.deleteAll();
-        basketRepository.deleteAll();
-        productRepository.deleteAll();
+    basketItemRepository.deleteAll();
+    basketRepository.deleteAll();
+    productRepository.deleteAll();
 
-        Product product1 = Product.builder()
+    Product product1 =
+        Product.builder()
             .name("iPhone 15")
             .category(ProductCategory.PHONE)
             .description("Newest iPhone")
@@ -73,7 +69,8 @@ public class BasketControllerIT {
             .available(true)
             .build();
 
-        Product product2 = Product.builder()
+    Product product2 =
+        Product.builder()
             .name("MacBook Pro")
             .category(ProductCategory.LAPTOP)
             .description("Apple Silicon")
@@ -82,7 +79,8 @@ public class BasketControllerIT {
             .available(true)
             .build();
 
-        Product product3 = Product.builder()
+    Product product3 =
+        Product.builder()
             .name("iPad Air")
             .category(ProductCategory.TABLET)
             .description("Lightweight tablet")
@@ -90,154 +88,153 @@ public class BasketControllerIT {
             .stock(30)
             .available(true)
             .build();
-        List<Product> savedProducts = productRepository.saveAll(List.of(product1, product2, product3));
-        initializedProducts = savedProducts.stream().map(Product::toDto).toList();
+    List<Product> savedProducts = productRepository.saveAll(List.of(product1, product2, product3));
+    initializedProducts = savedProducts.stream().map(Product::toDto).toList();
 
-        Basket basket = Basket.builder()
-            .status(BasketStatus.ACTIVE)
-            .build();
-        BasketItem item1 = BasketItem.builder()
-            .product(product1)
-            .basket(basket)
-            .quantity(2)
-            .build();
-        BasketItem item2 = BasketItem.builder()
-            .product(product2)
-            .basket(basket)
-            .quantity(1)
-            .build();
-        basket.getBasketItems().add(item1);
-        basket.getBasketItems().add(item2);
-        basketRepository.save(basket);
-    }
+    Basket basket = Basket.builder().status(BasketStatus.ACTIVE).build();
+    BasketItem item1 = BasketItem.builder().product(product1).basket(basket).quantity(2).build();
+    BasketItem item2 = BasketItem.builder().product(product2).basket(basket).quantity(1).build();
+    basket.getBasketItems().add(item1);
+    basket.getBasketItems().add(item2);
+    basketRepository.save(basket);
+  }
 
-    @Test
-    public void testCreateAndFetchBasket() {
-        BasketDTO dto = new BasketDTO();
-        dto.setStatus(BasketStatus.ACTIVE);
+  @Test
+  public void testCreateAndFetchBasket() {
+    BasketDTO dto = new BasketDTO();
+    dto.setStatus(BasketStatus.ACTIVE);
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<BasketDTO> request = new HttpEntity<>(dto, headers);
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpEntity<BasketDTO> request = new HttpEntity<>(dto, headers);
 
-        ResponseEntity<Void> createResp = restTemplate.postForEntity(baseUrl, request, Void.class);
-        assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    }
+    ResponseEntity<Void> createResp = restTemplate.postForEntity(baseUrl, request, Void.class);
+    assertThat(createResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+  }
 
-    @Test
-    public void testAddItemsToBasket_thenFetchBasket() {
-        // Create basket
-        BasketDTO basketDTO = new BasketDTO();
-        basketDTO.setStatus(BasketStatus.ACTIVE);
-        HttpEntity<BasketDTO> createReq = new HttpEntity<>(basketDTO);
-        ResponseEntity<String> createBasketResponse = restTemplate.postForEntity(baseUrl, createReq, String.class);
+  @Test
+  public void testAddItemsToBasket_thenFetchBasket() {
+    // Create basket
+    BasketDTO basketDTO = new BasketDTO();
+    basketDTO.setStatus(BasketStatus.ACTIVE);
+    HttpEntity<BasketDTO> createReq = new HttpEntity<>(basketDTO);
+    ResponseEntity<String> createBasketResponse =
+        restTemplate.postForEntity(baseUrl, createReq, String.class);
 
-        String basketId = createBasketResponse.getBody();
+    String basketId = createBasketResponse.getBody();
 
-        // Fetch basket ID
-        ResponseEntity<BasketDTO> response = restTemplate.getForEntity("/baskets/{id}", BasketDTO.class, basketId);
-        BasketDTO basket = response.getBody();
-        assertThat(basket).isNotNull();
-        assertThat(basket.getId()).isEqualTo(basketId);
+    // Fetch basket ID
+    ResponseEntity<BasketDTO> response =
+        restTemplate.getForEntity("/baskets/{id}", BasketDTO.class, basketId);
+    BasketDTO basket = response.getBody();
+    assertThat(basket).isNotNull();
+    assertThat(basket.getId()).isEqualTo(basketId);
 
-        ResponseEntity<ProductDTO[]> productsResp = restTemplate.getForEntity("/products", ProductDTO[].class);
-        ProductDTO product = productsResp.getBody()[0];
+    ResponseEntity<ProductDTO[]> productsResp =
+        restTemplate.getForEntity("/products", ProductDTO[].class);
+    ProductDTO product = productsResp.getBody()[0];
 
-        BasketItemDTO item = new BasketItemDTO();
-        item.setProductId(product.getId());
-        item.setQuantity(2);
-        item.setBasketId(basketId);
+    BasketItemDTO item = new BasketItemDTO();
+    item.setProductId(product.getId());
+    item.setQuantity(2);
+    item.setBasketId(basketId);
 
-        HttpEntity<List<BasketItemDTO>> addItemsReq = new HttpEntity<>(List.of(item));
-        ResponseEntity<Void> addResp = restTemplate.postForEntity(baseUrl + "/" + basketId + "/add-items", addItemsReq, Void.class);
-        assertThat(addResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    HttpEntity<List<BasketItemDTO>> addItemsReq = new HttpEntity<>(List.of(item));
+    ResponseEntity<Void> addResp =
+        restTemplate.postForEntity(
+            baseUrl + "/" + basketId + "/add-items", addItemsReq, Void.class);
+    assertThat(addResp.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        // Fetch basket
-        ResponseEntity<BasketDTO> fetchResp = restTemplate.getForEntity(baseUrl + "/" + basketId, BasketDTO.class);
-        assertThat(fetchResp.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(fetchResp.getBody().getBasketItems()).hasSize(1);
-    }
+    // Fetch basket
+    ResponseEntity<BasketDTO> fetchResp =
+        restTemplate.getForEntity(baseUrl + "/" + basketId, BasketDTO.class);
+    assertThat(fetchResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(fetchResp.getBody().getBasketItems()).hasSize(1);
+  }
 
-    @Test
-    void testCalculateReceipt() {
-        List<Basket> allBaskets = basketRepository.findAll();
-        assertThat(allBaskets).hasSize(1);
+  @Test
+  void testCalculateReceipt() {
+    List<Basket> allBaskets = basketRepository.findAll();
+    assertThat(allBaskets).hasSize(1);
 
-        Basket basket = allBaskets.get(0);
-        String basketId = basket.getId().toString();
+    Basket basket = allBaskets.get(0);
+    String basketId = basket.getId().toString();
 
-        BigDecimal expectedTotal = BigDecimal.valueOf(999).multiply(BigDecimal.valueOf(2))
-            .add(BigDecimal.valueOf(1999));
+    BigDecimal expectedTotal =
+        BigDecimal.valueOf(999).multiply(BigDecimal.valueOf(2)).add(BigDecimal.valueOf(1999));
 
-        ResponseEntity<ReceiptDTO> response = restTemplate.getForEntity(
+    ResponseEntity<ReceiptDTO> response =
+        restTemplate.getForEntity(
             baseUrl + "/" + basketId + "/calculate-receipt", ReceiptDTO.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        ReceiptDTO receipt = response.getBody();
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    ReceiptDTO receipt = response.getBody();
 
-        assertThat(receipt).isNotNull();
-        assertThat(receipt.getBasketId()).isEqualTo(basketId);
-        assertThat(receipt.getTotalPrice()).isEqualByComparingTo(expectedTotal);
-    }
+    assertThat(receipt).isNotNull();
+    assertThat(receipt.getBasketId()).isEqualTo(basketId);
+    assertThat(receipt.getTotalPrice()).isEqualByComparingTo(expectedTotal);
+  }
 
-    @Test
-    void testRemoveItems() {
-        // Create basket
-        BasketDTO basketDTO = new BasketDTO();
-        basketDTO.setStatus(BasketStatus.ACTIVE);
-        HttpEntity<BasketDTO> createReq = new HttpEntity<>(basketDTO);
-        ResponseEntity<String> createBasketResponse = restTemplate.postForEntity(baseUrl, createReq, String.class);
+  @Test
+  void testRemoveItems() {
+    // Create basket
+    BasketDTO basketDTO = new BasketDTO();
+    basketDTO.setStatus(BasketStatus.ACTIVE);
+    HttpEntity<BasketDTO> createReq = new HttpEntity<>(basketDTO);
+    ResponseEntity<String> createBasketResponse =
+        restTemplate.postForEntity(baseUrl, createReq, String.class);
 
-        String basketId = createBasketResponse.getBody();
+    String basketId = createBasketResponse.getBody();
 
-        // Fetch basket ID
-        ResponseEntity<BasketDTO> response = restTemplate.getForEntity("/baskets/{id}", BasketDTO.class, basketId);
-        BasketDTO basket = response.getBody();
-        assertThat(basket).isNotNull();
-        assertThat(basket.getId()).isEqualTo(basketId);
+    // Fetch basket ID
+    ResponseEntity<BasketDTO> response =
+        restTemplate.getForEntity("/baskets/{id}", BasketDTO.class, basketId);
+    BasketDTO basket = response.getBody();
+    assertThat(basket).isNotNull();
+    assertThat(basket.getId()).isEqualTo(basketId);
 
-        ResponseEntity<ProductDTO[]> productsResp = restTemplate.getForEntity("/products", ProductDTO[].class);
-        ProductDTO product = productsResp.getBody()[0];
+    ResponseEntity<ProductDTO[]> productsResp =
+        restTemplate.getForEntity("/products", ProductDTO[].class);
+    ProductDTO product = productsResp.getBody()[0];
 
-        BasketItemDTO item = new BasketItemDTO();
-        item.setProductId(product.getId());
-        item.setQuantity(2);
-        item.setBasketId(basketId);
+    BasketItemDTO item = new BasketItemDTO();
+    item.setProductId(product.getId());
+    item.setQuantity(2);
+    item.setBasketId(basketId);
 
-        HttpEntity<List<BasketItemDTO>> addItemsReq = new HttpEntity<>(List.of(item));
-        ResponseEntity<Void> addResp = restTemplate.postForEntity(baseUrl + "/" + basketId + "/add-items", addItemsReq, Void.class);
-        assertThat(addResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    HttpEntity<List<BasketItemDTO>> addItemsReq = new HttpEntity<>(List.of(item));
+    ResponseEntity<Void> addResp =
+        restTemplate.postForEntity(
+            baseUrl + "/" + basketId + "/add-items", addItemsReq, Void.class);
+    assertThat(addResp.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        // Fetch basket to get item IDs
-        ResponseEntity<BasketDTO> fetchResp = restTemplate.getForEntity(baseUrl + "/" + basketId, BasketDTO.class);
-        assertThat(fetchResp.getStatusCode()).isEqualTo(HttpStatus.OK);
-        BasketDTO updatedBasket = fetchResp.getBody();
+    // Fetch basket to get item IDs
+    ResponseEntity<BasketDTO> fetchResp =
+        restTemplate.getForEntity(baseUrl + "/" + basketId, BasketDTO.class);
+    assertThat(fetchResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    BasketDTO updatedBasket = fetchResp.getBody();
 
-        assertThat(updatedBasket).isNotNull();
-        assertThat(updatedBasket.getBasketItems()).hasSize(1);
+    assertThat(updatedBasket).isNotNull();
+    assertThat(updatedBasket.getBasketItems()).hasSize(1);
 
-        List<String> basketItemIds = updatedBasket.getBasketItems().stream()
-            .map(BasketItemDTO::getId)
-            .toList();
+    List<String> basketItemIds =
+        updatedBasket.getBasketItems().stream().map(BasketItemDTO::getId).toList();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<List<String>> deleteRequest = new HttpEntity<>(basketItemIds, headers);
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpEntity<List<String>> deleteRequest = new HttpEntity<>(basketItemIds, headers);
 
-        // Call remove-items
-        ResponseEntity<Void> deleteResp = restTemplate.exchange(
-            baseUrl + "/" + basketId + "/delete-items",
-            HttpMethod.POST,
-            deleteRequest,
-            Void.class
-        );
+    // Call remove-items
+    ResponseEntity<Void> deleteResp =
+        restTemplate.exchange(
+            baseUrl + "/" + basketId + "/delete-items", HttpMethod.POST, deleteRequest, Void.class);
 
-        assertThat(deleteResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(deleteResp.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        ResponseEntity<BasketDTO> verifyResp = restTemplate.getForEntity(baseUrl + "/" + basketId, BasketDTO.class);
-        BasketDTO emptyBasket = verifyResp.getBody();
-        assertThat(emptyBasket).isNotNull();
-        assertThat(emptyBasket.getBasketItems()).isEmpty();
-    }
+    ResponseEntity<BasketDTO> verifyResp =
+        restTemplate.getForEntity(baseUrl + "/" + basketId, BasketDTO.class);
+    BasketDTO emptyBasket = verifyResp.getBody();
+    assertThat(emptyBasket).isNotNull();
+    assertThat(emptyBasket.getBasketItems()).isEmpty();
+  }
 }
-

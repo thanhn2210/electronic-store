@@ -13,40 +13,41 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class DealService {
-    private final DealRepository dealRepository;
+  private final DealRepository dealRepository;
 
-    public DealService(DealRepository dealRepository) {
-        this.dealRepository = dealRepository;
-    }
+  public DealService(DealRepository dealRepository) {
+    this.dealRepository = dealRepository;
+  }
 
-    public List<DealDTO> getAllDeals() {
-        List<Deal> deals = dealRepository.findAll();
-        return deals.stream().map(Deal::toDto).toList();
-    }
+  public List<DealDTO> getAllDeals() {
+    List<Deal> deals = dealRepository.findAll();
+    return deals.stream().map(Deal::toDto).toList();
+  }
 
-    public void createDeal(DealDTO dealDTO) {
-        Deal deal = Deal.builder()
+  public void createDeal(DealDTO dealDTO) {
+    Deal deal =
+        Deal.builder()
             .description(dealDTO.getDescription())
             .type(DealType.valueOf(dealDTO.getType()))
             .expiration(LocalDateTime.parse(dealDTO.getExpiration()))
             .build();
-        dealRepository.save(deal);
+    dealRepository.save(deal);
+  }
+
+  public void updateDeal(String dealId, DealDTO dealDTO) {
+    Optional<Deal> dealOptional = dealRepository.findById(UUID.fromString(dealId));
+    if (dealOptional.isEmpty()) {
+      throw new RuntimeException("Deal is not found");
     }
 
-    public void updateDeal(String dealId, DealDTO dealDTO) {
-        Optional<Deal> dealOptional = dealRepository.findById(UUID.fromString(dealId));
-        if (dealOptional.isEmpty()) {
-            throw new RuntimeException("Deal is not found");
-        }
-
-        Deal deal = dealOptional.get();
-        try {
-            deal.setDescription(dealDTO.getDescription());
-            deal.setExpiration(LocalDateTime.parse(dealDTO.getExpiration()));
-        } catch (DateTimeParseException ex) {
-            throw new IllegalArgumentException("Invalid expiration date time!");
-        }
-
-        dealRepository.save(deal);
+    Deal deal = dealOptional.get();
+    try {
+      deal.setDescription(dealDTO.getDescription());
+      deal.setExpiration(LocalDateTime.parse(dealDTO.getExpiration()));
+    } catch (DateTimeParseException ex) {
+      throw new IllegalArgumentException("Invalid expiration date time!");
     }
+
+    dealRepository.save(deal);
+  }
 }

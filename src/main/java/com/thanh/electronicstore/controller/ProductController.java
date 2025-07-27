@@ -21,47 +21,47 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/products")
 public class ProductController {
 
-    private final ProductService productService;
+  private final ProductService productService;
 
-    public ProductController(ProductService productService) {
-        this.productService = productService;
-    }
+  public ProductController(ProductService productService) {
+    this.productService = productService;
+  }
 
-    @GetMapping
-    public ResponseEntity<List<ProductDTO>> getAllProducts() {
-        return ResponseEntity.ok(productService.getAllProducts());
-    }
+  @GetMapping
+  public ResponseEntity<List<ProductDTO>> getAllProducts() {
+    return ResponseEntity.ok(productService.getAllProducts());
+  }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ProductDTO> getProductById(@PathVariable String productId) {
-        return ResponseEntity.ok(productService.getProductById(productId));
-    }
+  @GetMapping("/{id}")
+  public ResponseEntity<ProductDTO> getProductById(@PathVariable String productId) {
+    return ResponseEntity.ok(productService.getProductById(productId));
+  }
 
-    @PostMapping
-    public ResponseEntity<Void> createProduct(@RequestBody ProductDTO productDTO) {
-        productService.createProduct(productDTO);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
+  @PostMapping
+  public ResponseEntity<Void> createProduct(@RequestBody ProductDTO productDTO) {
+    productService.createProduct(productDTO);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
 
-    @PostMapping("/{id}/add-deals")
-    public ResponseEntity<Void> addDeal(@PathVariable String id, @RequestBody List<DealDTO> dealDTOs) {
-        productService.addDeals(dealDTOs, id);
-        return ResponseEntity.status(HttpStatus.OK).build();
-    }
+  @PostMapping("/{id}/add-deals")
+  public ResponseEntity<Void> addDeal(
+      @PathVariable String id, @RequestBody List<DealDTO> dealDTOs) {
+    productService.addDeals(dealDTOs, id);
+    return ResponseEntity.status(HttpStatus.OK).build();
+  }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<ProductDTO>> searchProducts(
-        @ModelAttribute ProductFilterCriteria criteria,
-        @RequestParam(defaultValue = "0") int page,
-        @RequestParam(defaultValue = "10") int size
-    ) {
-        List<ProductDTO> products = productService.filterProducts(criteria, page, size);
-        return ResponseEntity.ok(products);
-    }
+  @GetMapping("/search")
+  public ResponseEntity<List<ProductDTO>> searchProducts(
+      @ModelAttribute ProductFilterCriteria criteria,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "10") int size) {
+    List<ProductDTO> products = productService.filterProducts(criteria, page, size);
+    return ResponseEntity.ok(products);
+  }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProduct(@PathVariable String id) {
-        productService.deleteProduct(id);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteProduct(@PathVariable String id) {
+    productService.deleteProduct(id);
+    return ResponseEntity.status(HttpStatus.CREATED).build();
+  }
 }

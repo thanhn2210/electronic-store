@@ -15,8 +15,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BasketDTO {
-    private String id;
-    @Builder.Default
-    private List<BasketItemDTO> basketItems = new ArrayList<>();
-    private BasketStatus status;
+  private String id;
+  @Builder.Default private List<BasketItemDTO> basketItems = new ArrayList<>();
+  private BasketStatus status;
 }

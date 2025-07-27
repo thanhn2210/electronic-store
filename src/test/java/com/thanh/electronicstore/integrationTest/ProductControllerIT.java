@@ -1,6 +1,5 @@
 package com.thanh.electronicstore.integrationTest;
 
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -38,39 +37,34 @@ import org.springframework.test.context.ActiveProfiles;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class ProductControllerIT {
 
-    @LocalServerPort
-    private int port;
+  @LocalServerPort private int port;
 
-    @Autowired
-    private TestRestTemplate restTemplate;
+  @Autowired private TestRestTemplate restTemplate;
 
-    @Autowired
-    private BasketRepository basketRepository;
+  @Autowired private BasketRepository basketRepository;
 
-    @Autowired
-    private BasketItemRepository basketItemRepository;
+  @Autowired private BasketItemRepository basketItemRepository;
 
-    @Autowired
-    private ProductRepository productRepository;
+  @Autowired private ProductRepository productRepository;
 
-    @Autowired
-    private DealRepository dealRepository;
+  @Autowired private DealRepository dealRepository;
 
-    private String getBaseUrl() {
-        return "http://localhost:" + port + "/products";
-    }
+  private String getBaseUrl() {
+    return "http://localhost:" + port + "/products";
+  }
 
-    @BeforeEach
-    void cleanUpDatabase() {
-        basketItemRepository.deleteAll();
-        basketRepository.deleteAll();
-        dealRepository.deleteAll();
-        productRepository.deleteAll();
-    }
+  @BeforeEach
+  void cleanUpDatabase() {
+    basketItemRepository.deleteAll();
+    basketRepository.deleteAll();
+    dealRepository.deleteAll();
+    productRepository.deleteAll();
+  }
 
-    @Test
-    void createAndFetchProduct() {
-        ProductDTO productDTO = ProductDTO.builder()
+  @Test
+  void createAndFetchProduct() {
+    ProductDTO productDTO =
+        ProductDTO.builder()
             .name("Test Phone")
             .description("Integration Test Product")
             .category(ProductCategory.PHONE)
@@ -79,40 +73,37 @@ class ProductControllerIT {
             .available(true)
             .build();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+    HttpHeaders headers = new HttpHeaders();
+    headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<ProductDTO> request = new HttpEntity<>(productDTO, headers);
+    HttpEntity<ProductDTO> request = new HttpEntity<>(productDTO, headers);
 
-        // Create new product
-        ResponseEntity<Void> postResponse = restTemplate.postForEntity(getBaseUrl(), request, Void.class);
-        assertThat(postResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+    // Create new product
+    ResponseEntity<Void> postResponse =
+        restTemplate.postForEntity(getBaseUrl(), request, Void.class);
+    assertThat(postResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
-        // Fetch
-        ResponseEntity<List<ProductDTO>> getResponse = restTemplate.exchange(
-            getBaseUrl(),
-            HttpMethod.GET,
-            null,
-            new ParameterizedTypeReference<>() {}
-        );
+    // Fetch
+    ResponseEntity<List<ProductDTO>> getResponse =
+        restTemplate.exchange(
+            getBaseUrl(), HttpMethod.GET, null, new ParameterizedTypeReference<>() {});
 
-        // Assert
-        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
-        List<ProductDTO> products = getResponse.getBody();
-        assertThat(products).isNotEmpty();
+    // Assert
+    assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+    List<ProductDTO> products = getResponse.getBody();
+    assertThat(products).isNotEmpty();
 
-        ProductDTO found = products.stream()
-            .filter(p -> p.getName().equals("Test Phone"))
-            .findFirst()
-            .orElseThrow();
+    ProductDTO found =
+        products.stream().filter(p -> p.getName().equals("Test Phone")).findFirst().orElseThrow();
 
-        assertThat(found.getCategory()).isEqualTo(ProductCategory.PHONE);
-        assertEquals(0, productDTO.getPrice().compareTo(BigDecimal.valueOf(999)));
-    }
+    assertThat(found.getCategory()).isEqualTo(ProductCategory.PHONE);
+    assertEquals(0, productDTO.getPrice().compareTo(BigDecimal.valueOf(999)));
+  }
 
-    @Test
-    void getAllProducts_shouldReturnListOfProducts() {
-        ProductDTO productDTO = ProductDTO.builder()
+  @Test
+  void getAllProducts_shouldReturnListOfProducts() {
+    ProductDTO productDTO =
+        ProductDTO.builder()
             .id(null)
             .name("Phone")
             .description("Smartphone")
@@ -122,19 +113,21 @@ class ProductControllerIT {
             .available(true)
             .deals(null)
             .build();
-        restTemplate.postForEntity("/products", productDTO, Void.class);
+    restTemplate.postForEntity("/products", productDTO, Void.class);
 
-        ResponseEntity<ProductDTO[]> response = restTemplate.getForEntity("/products", ProductDTO[].class);
+    ResponseEntity<ProductDTO[]> response =
+        restTemplate.getForEntity("/products", ProductDTO[].class);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().length > 0);
-        assertEquals("Phone", response.getBody()[0].getName());
-    }
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().length > 0);
+    assertEquals("Phone", response.getBody()[0].getName());
+  }
 
-    @Test
-    void searchProducts_shouldReturnFilteredList() {
-        ProductDTO product1 = ProductDTO.builder()
+  @Test
+  void searchProducts_shouldReturnFilteredList() {
+    ProductDTO product1 =
+        ProductDTO.builder()
             .id(null)
             .name("TV")
             .description("Smart TV")
@@ -144,7 +137,8 @@ class ProductControllerIT {
             .available(true)
             .deals(null)
             .build();
-        ProductDTO product2 = ProductDTO.builder()
+    ProductDTO product2 =
+        ProductDTO.builder()
             .id(null)
             .name("Fridge")
             .description("Cool fridge")
@@ -154,21 +148,22 @@ class ProductControllerIT {
             .available(true)
             .deals(null)
             .build();
-        restTemplate.postForEntity("/products", product1, Void.class);
-        restTemplate.postForEntity("/products", product2, Void.class);
+    restTemplate.postForEntity("/products", product1, Void.class);
+    restTemplate.postForEntity("/products", product2, Void.class);
 
-        String url = "/products/search?category=PHONE&minPrice=400&page=0&size=10";
-        ResponseEntity<ProductDTO[]> response = restTemplate.getForEntity(url, ProductDTO[].class);
+    String url = "/products/search?category=PHONE&minPrice=400&page=0&size=10";
+    ResponseEntity<ProductDTO[]> response = restTemplate.getForEntity(url, ProductDTO[].class);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().length >= 1);
-    }
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+    assertTrue(response.getBody().length >= 1);
+  }
 
-    @Test
-    void addDealToProduct_shouldUpdateProductDeal() {
-        // Create product
-        ProductDTO product = ProductDTO.builder()
+  @Test
+  void addDealToProduct_shouldUpdateProductDeal() {
+    // Create product
+    ProductDTO product =
+        ProductDTO.builder()
             .name("Laptop")
             .description("Gaming")
             .price(BigDecimal.valueOf(1000))
@@ -177,30 +172,33 @@ class ProductControllerIT {
             .available(true)
             .deals(null)
             .build();
-        restTemplate.postForEntity("/products", product, Void.class);
+    restTemplate.postForEntity("/products", product, Void.class);
 
-        // Get created product
-        ResponseEntity<ProductDTO[]> getResponse = restTemplate.getForEntity("/products", ProductDTO[].class);
-        ProductDTO createdProduct = getResponse.getBody()[0];
-        String id = createdProduct.getId();
+    // Get created product
+    ResponseEntity<ProductDTO[]> getResponse =
+        restTemplate.getForEntity("/products", ProductDTO[].class);
+    ProductDTO createdProduct = getResponse.getBody()[0];
+    String id = createdProduct.getId();
 
-        // Create and add deal
-        DealDTO deal = DealDTO.builder()
+    // Create and add deal
+    DealDTO deal =
+        DealDTO.builder()
             .expiration("2025-07-30T00:00:00")
             .description("Summer Sale")
             .type("PERCENTAGE_DISCOUNT")
             .build();
-        restTemplate.postForEntity("/products/" + id + "/add-deals", List.of(deal), String.class);
+    restTemplate.postForEntity("/products/" + id + "/add-deals", List.of(deal), String.class);
 
-        ResponseEntity<ProductDTO[]> updated = restTemplate.getForEntity("/products", ProductDTO[].class);
-        ProductDTO updatedProduct = updated.getBody()[0];
+    ResponseEntity<ProductDTO[]> updated =
+        restTemplate.getForEntity("/products", ProductDTO[].class);
+    ProductDTO updatedProduct = updated.getBody()[0];
 
-        assertNotNull(updatedProduct.getDeals());
-        assertFalse(updatedProduct.getDeals().isEmpty());
+    assertNotNull(updatedProduct.getDeals());
+    assertFalse(updatedProduct.getDeals().isEmpty());
 
-        DealDTO addedDeal = updatedProduct.getDeals().get(0);
-        assertEquals("2025-07-30T00:00", addedDeal.getExpiration().substring(0, 16));
-        assertEquals("Summer Sale", addedDeal.getDescription());
-        assertEquals("PERCENTAGE_DISCOUNT", addedDeal.getType());
-    }
+    DealDTO addedDeal = updatedProduct.getDeals().get(0);
+    assertEquals("2025-07-30T00:00", addedDeal.getExpiration().substring(0, 16));
+    assertEquals("Summer Sale", addedDeal.getDescription());
+    assertEquals("PERCENTAGE_DISCOUNT", addedDeal.getType());
+  }
 }

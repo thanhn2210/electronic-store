@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 @Builder
 public class ReceiptDTO {
-    private String basketId;
-    private List<ReceiptItemDTO> items;
-    private BigDecimal totalPrice;
+  private String basketId;
+  private List<ReceiptItemDTO> items;
+  private BigDecimal totalPrice;
 }

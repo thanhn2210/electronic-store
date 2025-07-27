@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.antlr.v4.runtime.misc.Pair;
@@ -29,144 +30,167 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class BasketService {
-    private static final Logger logger = LoggerFactory.getLogger(BasketService.class);
+  private static final Logger logger = LoggerFactory.getLogger(BasketService.class);
 
-    private final BasketRepository basketRepository;
-    private final ProductService productService;
-    private final DealCalculatorService dealCalculatorService;
+  private final BasketRepository basketRepository;
+  private final ProductService productService;
+  private final DealCalculatorService dealCalculatorService;
+  private final ReentrantLock lock = new ReentrantLock();
 
-    public BasketService(BasketRepository basketRepository, ProductService productService,
-        DealCalculatorService dealCalculatorService) {
-        this.basketRepository = basketRepository;
-        this.productService = productService;
-        this.dealCalculatorService = dealCalculatorService;
-    }
+  public BasketService(
+      BasketRepository basketRepository,
+      ProductService productService,
+      DealCalculatorService dealCalculatorService) {
+    this.basketRepository = basketRepository;
+    this.productService = productService;
+    this.dealCalculatorService = dealCalculatorService;
+  }
 
-    public BasketDTO getBasket(String id) {
-        Basket basket = basketRepository.findById(UUID.fromString(id))
+  public BasketDTO getBasket(String id) {
+    Basket basket =
+        basketRepository
+            .findById(UUID.fromString(id))
             .orElseThrow(() -> new BasketNotFoundException(id));
-        return basket.toDto();
-    }
+    return basket.toDto();
+  }
 
-    public String createBasket(BasketDTO basketDTO) {
-        Basket basket = new Basket();
-        basket.setStatus(BasketStatus.ACTIVE);
+  public String createBasket(BasketDTO basketDTO) {
+    Basket basket = new Basket();
+    basket.setStatus(BasketStatus.ACTIVE);
 
-        List<UUID> productIds = basketDTO.getBasketItems().stream()
+    List<UUID> productIds =
+        basketDTO.getBasketItems().stream()
             .map(dto -> UUID.fromString(dto.getProductId()))
             .toList();
-        Map<UUID, Product> productMap = productService.getAllProductByIds(productIds).stream().collect(
-            Collectors.toMap(Product::getId, Function.identity()));
+    Map<UUID, Product> productMap =
+        productService.getAllProductByIds(productIds).stream()
+            .collect(Collectors.toMap(Product::getId, Function.identity()));
 
-        List<BasketItem> basketItems = basketDTO.getBasketItems().stream().map(
-            basketItemDTO -> {
-                Product product = productMap.get(UUID.fromString(basketItemDTO.getProductId()));
-                if (product == null) {
+    List<BasketItem> basketItems =
+        basketDTO.getBasketItems().stream()
+            .map(
+                basketItemDTO -> {
+                  Product product = productMap.get(UUID.fromString(basketItemDTO.getProductId()));
+                  if (product == null) {
                     throw new ProductNotFoundException(basketItemDTO.getProductId());
-                }
-                return BasketItem.builder()
-                    .product(product)
-                    .quantity(basketItemDTO.getQuantity())
-                    .basket(basket)
-                    .build();
-            }
-        ).toList();
+                  }
+                  return BasketItem.builder()
+                      .product(product)
+                      .quantity(basketItemDTO.getQuantity())
+                      .basket(basket)
+                      .build();
+                })
+            .toList();
 
-        basket.setBasketItems(basketItems);
+    basket.setBasketItems(basketItems);
 
-        return String.valueOf(basketRepository.save(basket).getId());
-    }
+    return String.valueOf(basketRepository.save(basket).getId());
+  }
 
-    @Transactional
-    public Pair<List<BasketItemDTO>, List<BasketItemDTO>> addBasketItems(String basketId, List<BasketItemDTO> addBasketItems) {
-        Basket basket = basketRepository.findById(UUID.fromString(basketId))
-            .orElseThrow(() -> new BasketNotFoundException(basketId));
+  @Transactional
+  public Pair<List<BasketItemDTO>, List<BasketItemDTO>> addBasketItems(
+      String basketId, List<BasketItemDTO> addBasketItems) {
+    lock.lock();
 
-        if (basket.getStatus() != BasketStatus.ACTIVE) {
-            throw new BasketAlreadyCheckedOutException(basketId);
+    try {
+      Basket basket =
+          basketRepository
+              .findById(UUID.fromString(basketId))
+              .orElseThrow(() -> new BasketNotFoundException(basketId));
+
+      if (basket.getStatus() != BasketStatus.ACTIVE) {
+        throw new BasketAlreadyCheckedOutException(basketId);
+      }
+
+      List<BasketItemDTO> skippedItems = new ArrayList<>();
+      List<BasketItemDTO> addedItems = new ArrayList<>();
+      for (BasketItemDTO basketItemDTO : addBasketItems) {
+        Product product = productService.getProductEntityById(basketItemDTO.getProductId());
+
+        if (product.getStock() < basketItemDTO.getQuantity()) {
+          skippedItems.add(basketItemDTO);
+          continue;
         }
 
-        List<BasketItemDTO> skippedItems = new ArrayList<>();
-        List<BasketItemDTO> addedItems = new ArrayList<>();
+        product.setStock(product.getStock() - basketItemDTO.getQuantity());
+        addedItems.add(basketItemDTO);
 
-        for (BasketItemDTO basketItemDTO : addBasketItems) {
-            Product product = productService.getProductEntityById(basketItemDTO.getProductId());
-
-            if (product.getStock() < basketItemDTO.getQuantity()) {
-                skippedItems.add(basketItemDTO);
-                continue;
-            }
-
-            product.setStock(product.getStock() - basketItemDTO.getQuantity());
-            addedItems.add(basketItemDTO);
-
-            BasketItem basketItem = BasketItem.builder()
+        BasketItem basketItem =
+            BasketItem.builder()
                 .product(product)
                 .basket(basket)
                 .quantity(basketItemDTO.getQuantity())
                 .build();
 
-            basket.getBasketItems().add(basketItem);
-        }
+        basket.getBasketItems().add(basketItem);
+      }
 
-        basketRepository.saveAndFlush(basket);
+      basketRepository.saveAndFlush(basket);
+      return new Pair<>(skippedItems, addedItems);
+    } finally {
+      lock.unlock();
+    }
+  }
 
-        return new Pair<>(skippedItems, addedItems);
+  public void removeBasketItems(String basketId, List<String> removedBasketItemIds) {
+    Optional<Basket> basketOptional = basketRepository.findById(UUID.fromString(basketId));
+    if (basketOptional.isEmpty()) {
+      throw new BasketNotFoundException(basketId);
     }
 
+    Basket basket = basketOptional.get();
+    basket
+        .getBasketItems()
+        .removeIf(basketItem -> removedBasketItemIds.contains(basketItem.getId().toString()));
+    basketRepository.save(basket);
+  }
 
-    public void removeBasketItems(String basketId, List<String> removedBasketItemIds) {
-        Optional<Basket> basketOptional = basketRepository.findById(UUID.fromString(basketId));
-        if (basketOptional.isEmpty()) {
-            throw new BasketNotFoundException(basketId);
-        }
-
-        Basket basket = basketOptional.get();
-        basket.getBasketItems().removeIf(basketItem -> removedBasketItemIds.contains(basketItem.getId().toString()));
-        basketRepository.save(basket);
+  public ReceiptDTO calculateReceipt(String basketId) {
+    Optional<Basket> basketOptional = basketRepository.findById(UUID.fromString(basketId));
+    if (basketOptional.isEmpty()) {
+      throw new BasketNotFoundException(basketId);
     }
 
-    public ReceiptDTO calculateReceipt(String basketId) {
-        Optional<Basket> basketOptional = basketRepository.findById(UUID.fromString(basketId));
-        if (basketOptional.isEmpty()) {
-            throw new BasketNotFoundException(basketId);
-        }
+    Basket basket = basketOptional.get();
+    List<ReceiptItemDTO> receiptItems =
+        basket.getBasketItems().stream()
+            .map(
+                basketItem -> {
+                  Product product = basketItem.getProduct();
+                  int quantity = basketItem.getQuantity();
+                  BigDecimal unitPrice = product.getPrice();
+                  BigDecimal originalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
 
-        Basket basket = basketOptional.get();
-        List<ReceiptItemDTO> receiptItems = basket.getBasketItems().stream().map(basketItem -> {
-            Product product = basketItem.getProduct();
-            int quantity = basketItem.getQuantity();
-            BigDecimal unitPrice = product.getPrice();
-            BigDecimal originalPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
+                  BigDecimal totalDiscount = BigDecimal.ZERO;
+                  if (product.getDeals() != null) {
+                    for (Deal deal : product.getDeals()) {
+                      totalDiscount =
+                          totalDiscount.add(
+                              dealCalculatorService.calculateDiscount(deal, unitPrice, quantity));
+                    }
+                  }
 
-            BigDecimal totalDiscount = BigDecimal.ZERO;
-            if (product.getDeals() != null) {
-                for (Deal deal : product.getDeals()) {
-                    totalDiscount = totalDiscount.add(
-                        dealCalculatorService.calculateDiscount(deal, unitPrice, quantity)
-                    );
-                }
-            }
+                  BigDecimal finalPrice = originalPrice.subtract(totalDiscount);
 
-            BigDecimal finalPrice = originalPrice.subtract(totalDiscount);
+                  return ReceiptItemDTO.builder()
+                      .productName(product.getName())
+                      .quantity(quantity)
+                      .originalPrice(originalPrice)
+                      .discount(totalDiscount)
+                      .finalPrice(finalPrice)
+                      .build();
+                })
+            .toList();
 
-            return ReceiptItemDTO.builder()
-                .productName(product.getName())
-                .quantity(quantity)
-                .originalPrice(originalPrice)
-                .discount(totalDiscount)
-                .finalPrice(finalPrice)
-                .build();
-        }).toList();
-
-        BigDecimal totalPrice = receiptItems.stream()
+    BigDecimal totalPrice =
+        receiptItems.stream()
             .map(ReceiptItemDTO::getFinalPrice)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return ReceiptDTO.builder()
-            .basketId(basketId)
-            .items(receiptItems)
-            .totalPrice(totalPrice)
-            .build();
-    }
+    return ReceiptDTO.builder()
+        .basketId(basketId)
+        .items(receiptItems)
+        .totalPrice(totalPrice)
+        .build();
+  }
 }

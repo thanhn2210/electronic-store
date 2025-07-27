@@ -24,96 +24,98 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DealServiceTest {
 
-    @Mock
-    private DealRepository dealRepository;
-    @InjectMocks
-    private DealService dealService;
+  @Mock private DealRepository dealRepository;
+  @InjectMocks private DealService dealService;
 
-    @Test
-    void getAllDeals_shouldReturnListOfDealDTOs() {
-        Deal deal = Deal.builder()
+  @Test
+  void getAllDeals_shouldReturnListOfDealDTOs() {
+    Deal deal =
+        Deal.builder()
             .id(UUID.randomUUID())
             .type(DealType.PERCENTAGE_DISCOUNT)
             .description("10% off")
             .expiration(LocalDateTime.now().plusDays(5))
             .build();
 
-        when(dealRepository.findAll()).thenReturn(List.of(deal));
+    when(dealRepository.findAll()).thenReturn(List.of(deal));
 
-        List<DealDTO> deals = dealService.getAllDeals();
+    List<DealDTO> deals = dealService.getAllDeals();
 
-        assertThat(deals).hasSize(1);
-        assertThat(deals.get(0).getDescription()).isEqualTo("10% off");
-    }
+    assertThat(deals).hasSize(1);
+    assertThat(deals.get(0).getDescription()).isEqualTo("10% off");
+  }
 
-    @Test
-    void createDeal_shouldSaveNewDeal() {
-        DealDTO dto = DealDTO.builder()
+  @Test
+  void createDeal_shouldSaveNewDeal() {
+    DealDTO dto =
+        DealDTO.builder()
             .description("15% off")
             .type(String.valueOf(DealType.PERCENTAGE_DISCOUNT))
             .expiration(LocalDateTime.now().plusDays(3).toString())
             .build();
 
-        dealService.createDeal(dto);
+    dealService.createDeal(dto);
 
-        verify(dealRepository).save(any(Deal.class));
-    }
+    verify(dealRepository).save(any(Deal.class));
+  }
 
-    @Test
-    void updateDeal_shouldUpdateExistingDeal() {
-        UUID id = UUID.randomUUID();
-        Deal existing = Deal.builder()
+  @Test
+  void updateDeal_shouldUpdateExistingDeal() {
+    UUID id = UUID.randomUUID();
+    Deal existing =
+        Deal.builder()
             .id(id)
             .description("Old desc")
             .expiration(LocalDateTime.now().plusDays(1))
             .build();
 
-        DealDTO updated = DealDTO.builder()
+    DealDTO updated =
+        DealDTO.builder()
             .description("Updated desc")
             .expiration(LocalDateTime.now().plusDays(5).toString())
             .build();
 
-        when(dealRepository.findById(id)).thenReturn(Optional.of(existing));
+    when(dealRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        dealService.updateDeal(id.toString(), updated);
+    dealService.updateDeal(id.toString(), updated);
 
-        assertThat(existing.getDescription()).isEqualTo("Updated desc");
-        verify(dealRepository).save(existing);
-    }
+    assertThat(existing.getDescription()).isEqualTo("Updated desc");
+    verify(dealRepository).save(existing);
+  }
 
-    @Test
-    void updateDeal_shouldThrowExceptionIfDealNotFound() {
-        UUID id = UUID.randomUUID();
-        DealDTO updated = DealDTO.builder()
+  @Test
+  void updateDeal_shouldThrowExceptionIfDealNotFound() {
+    UUID id = UUID.randomUUID();
+    DealDTO updated =
+        DealDTO.builder()
             .description("Updated desc")
             .expiration(LocalDateTime.now().plusDays(5).toString())
             .build();
 
-        when(dealRepository.findById(id)).thenReturn(Optional.empty());
+    when(dealRepository.findById(id)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> dealService.updateDeal(id.toString(), updated))
-            .isInstanceOf(RuntimeException.class)
-            .hasMessage("Deal is not found");
-    }
+    assertThatThrownBy(() -> dealService.updateDeal(id.toString(), updated))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Deal is not found");
+  }
 
-    @Test
-    void updateDeal_shouldThrowExceptionIfInvalidDate() {
-        UUID id = UUID.randomUUID();
-        Deal existing = Deal.builder()
+  @Test
+  void updateDeal_shouldThrowExceptionIfInvalidDate() {
+    UUID id = UUID.randomUUID();
+    Deal existing =
+        Deal.builder()
             .id(id)
             .description("Old desc")
             .expiration(LocalDateTime.now().plusDays(1))
             .build();
 
-        DealDTO updated = DealDTO.builder()
-            .description("Updated desc")
-            .expiration("invalid-date")
-            .build();
+    DealDTO updated =
+        DealDTO.builder().description("Updated desc").expiration("invalid-date").build();
 
-        when(dealRepository.findById(id)).thenReturn(Optional.of(existing));
+    when(dealRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> dealService.updateDeal(id.toString(), updated))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessage("Invalid expiration date time!");
-    }
+    assertThatThrownBy(() -> dealService.updateDeal(id.toString(), updated))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Invalid expiration date time!");
+  }
 }
