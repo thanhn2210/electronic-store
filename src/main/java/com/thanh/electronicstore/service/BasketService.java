@@ -153,9 +153,16 @@ public class BasketService {
         basketRepository
             .findById(UUID.fromString(basketId))
             .orElseThrow(() -> new BasketNotFoundException(basketId));
-    basket
-        .getBasketItems()
-        .removeIf(basketItem -> removedBasketItemIds.contains(basketItem.getId().toString()));
+    List<BasketItem> basketItems = basket.getBasketItems();
+    basketItems.removeIf(
+        item -> {
+          if (removedBasketItemIds.contains(item.getId().toString())) {
+            Product product = item.getProduct();
+            product.setStock(product.getStock() + item.getQuantity());
+            return true;
+          }
+          return false;
+        });
 
     return basketRepository.save(basket).toDto();
   }
