@@ -148,6 +148,7 @@ public class BasketService {
     }
   }
 
+  @Transactional
   public BasketDTO removeBasketItems(String basketId, List<String> removedBasketItemIds) {
     Basket basket =
         basketRepository

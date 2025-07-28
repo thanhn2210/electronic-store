@@ -1,11 +1,13 @@
 package com.thanh.electronicstore.test.service;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.thanh.electronicstore.dto.BasketDTO;
 import com.thanh.electronicstore.dto.BasketItemDTO;
 import com.thanh.electronicstore.exception.BasketAlreadyCheckedOutException;
 import com.thanh.electronicstore.model.Basket;
@@ -14,6 +16,7 @@ import com.thanh.electronicstore.model.BasketStatus;
 import com.thanh.electronicstore.model.Product;
 import com.thanh.electronicstore.repository.BasketItemRepository;
 import com.thanh.electronicstore.repository.BasketRepository;
+import com.thanh.electronicstore.repository.ProductRepository;
 import com.thanh.electronicstore.service.BasketService;
 import com.thanh.electronicstore.service.ProductService;
 import java.util.ArrayList;
@@ -31,8 +34,8 @@ class BasketServiceTest {
 
   @Mock private BasketRepository basketRepository;
   @Mock private BasketItemRepository basketItemRepository;
-
   @Mock private ProductService productService;
+  @Mock private ProductRepository productRepository;
 
   @InjectMocks private BasketService basketService;
 
@@ -189,5 +192,47 @@ class BasketServiceTest {
 
     assertEquals(8, product1.getStock());
     assertEquals(1, product2.getStock());
+  }
+
+  @Test
+  void shouldRemoveBasketItemAndRestoreProductStock() {
+    UUID basketId = UUID.randomUUID();
+    UUID item1Id = UUID.randomUUID();
+    UUID item2Id = UUID.randomUUID();
+    UUID productId = UUID.randomUUID();
+
+    Product product = Product.builder().id(productId).name("Product A").stock(5).build();
+
+    BasketItem item1 = BasketItem.builder().id(item1Id).product(product).quantity(2).build();
+
+    BasketItem item2 = BasketItem.builder().id(item2Id).product(product).quantity(1).build();
+
+    Basket basket =
+        Basket.builder()
+            .id(basketId)
+            .status(BasketStatus.ACTIVE)
+            .basketItems(new ArrayList<>(List.of(item1, item2)))
+            .build();
+
+    when(basketRepository.findById(basketId)).thenReturn(Optional.of(basket));
+    when(basketRepository.save(any(Basket.class)))
+        .thenAnswer(
+            invocation -> {
+              Basket savedBasket = invocation.getArgument(0);
+              item2.setBasket(savedBasket);
+              return savedBasket;
+            });
+
+    // When
+    BasketDTO result =
+        basketService.removeBasketItems(basketId.toString(), List.of(item1Id.toString()));
+
+    // Then
+    assertEquals(1, basket.getBasketItems().size());
+    assertEquals(item2Id, basket.getBasketItems().get(0).getId());
+    assertEquals(7, product.getStock());
+
+    verify(basketRepository).findById(basketId);
+    verify(basketRepository).save(any(Basket.class));
   }
 }
