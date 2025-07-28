@@ -5,8 +5,9 @@ To build the app and run it with:
 ```bash
 ./gradlew bootJar && docker build -t electronic-store . && docker run -p 8080:8080 electronic-store
 ```
-### APIs:
-Create Product:
+### API cURLs:
+
+#### Create Product:
 ```bash
 curl --request POST \
   --url http://localhost:8080/products \
@@ -29,7 +30,7 @@ curl --request POST \
 }'
 ```
 
-Add deals to a product:
+#### Add deals to a product:
 ```bash
 curl --request POST \
   --url http://localhost:8080/products/{INPUT_PRODUCT_ID}/add-deals \
@@ -44,13 +45,46 @@ curl --request POST \
 ]'
 ```
 
-Filter products:
+#### Filter products:
 ```bash
 curl --request GET \
 --url 'http://localhost:8080/products/search?category=PHONE&minPrice=100&maxPrice=500&available=true&page=0&size=1' \
 --header 'Content-Type: application/json'
 ```
+#### Create a basket:
+```bash
+curl --request POST \
+  --url http://localhost:8080/baskets \
+  --header 'Content-Type: application/json' \
+  --data '{
+  "basketItems": [
+    {
+      "productId": "b368e98a-633c-40ef-8b1b-9a8ed5c6e436",
+      "quantity": 1
+    }
+  ],
+  "status": "ACTIVE"
+}'
+```
 
+#### Add items to basket:
+```bash
+curl --request POST \
+  --url http://localhost:8080/baskets/{BASKET_ID}/add-items \
+  --header 'Content-Type: application/json' \
+  --data '[
+    {
+      "productId": "PRODUCT_ID",
+      "basketId": "BASKET_ID",
+      "quantity": 1
+    }
+  ]'
+```
+
+#### Remove items from basket:
+```bash
+
+```
 ## How to run tests:
 ```bash
 ./gradlew test

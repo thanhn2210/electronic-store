@@ -6,7 +6,6 @@ import com.thanh.electronicstore.dto.ReceiptDTO;
 import com.thanh.electronicstore.dto.ReceiptItemDTO;
 import com.thanh.electronicstore.exception.BasketAlreadyCheckedOutException;
 import com.thanh.electronicstore.exception.BasketNotFoundException;
-import com.thanh.electronicstore.exception.ProductNotFoundException;
 import com.thanh.electronicstore.model.Basket;
 import com.thanh.electronicstore.model.BasketItem;
 import com.thanh.electronicstore.model.BasketStatus;
@@ -53,37 +52,52 @@ public class BasketService {
     return basket.toDto();
   }
 
+  @Transactional
   public BasketDTO createBasket(BasketDTO basketDTO) {
-    Basket basket = new Basket();
-    basket.setStatus(BasketStatus.ACTIVE);
+    lock.lock();
+    try {
+      Basket basket = new Basket();
+      basket.setStatus(BasketStatus.ACTIVE);
 
-    List<UUID> productIds =
-        basketDTO.getBasketItems().stream()
-            .map(dto -> UUID.fromString(dto.getProductId()))
-            .toList();
-    Map<UUID, Product> productMap =
-        productService.getAllProductByIds(productIds).stream()
-            .collect(Collectors.toMap(Product::getId, Function.identity()));
+      List<UUID> productIds =
+          basketDTO.getBasketItems().stream()
+              .map(dto -> UUID.fromString(dto.getProductId()))
+              .toList();
+      Map<UUID, Product> productMap =
+          productService.getAllProductByIds(productIds).stream()
+              .collect(Collectors.toMap(Product::getId, Function.identity()));
 
-    List<BasketItem> basketItems =
-        basketDTO.getBasketItems().stream()
-            .map(
-                basketItemDTO -> {
-                  Product product = productMap.get(UUID.fromString(basketItemDTO.getProductId()));
-                  if (product == null) {
-                    throw new ProductNotFoundException(basketItemDTO.getProductId());
-                  }
-                  return BasketItem.builder()
-                      .product(product)
-                      .quantity(basketItemDTO.getQuantity())
-                      .basket(basket)
-                      .build();
-                })
-            .toList();
+      List<BasketItem> addBasketItems = new ArrayList<>();
 
-    basket.setBasketItems(basketItems);
+      for (BasketItemDTO basketItemDTO : basketDTO.getBasketItems()) {
+        Product product = productMap.get(UUID.fromString(basketItemDTO.getProductId()));
+        if (product == null) {
+          logger.error("Product not found.");
+          continue;
+        }
+        if (product.getStock() < basketItemDTO.getQuantity()) {
+          logger.error("Product has not enough stock to add");
+          continue;
+        }
 
-    return basketRepository.save(basket).toDto();
+        product.setStock(product.getStock() - basketItemDTO.getQuantity());
+        if (product.getStock() == 0) {
+          product.setAvailable(Boolean.FALSE);
+        }
+
+        addBasketItems.add(
+            BasketItem.builder()
+                .product(product)
+                .quantity(basketItemDTO.getQuantity())
+                .basket(basket)
+                .build());
+      }
+
+      basket.setBasketItems(addBasketItems);
+      return basketRepository.save(basket).toDto();
+    } finally {
+      lock.unlock();
+    }
   }
 
   @Transactional
@@ -111,6 +125,10 @@ public class BasketService {
         }
 
         product.setStock(product.getStock() - basketItemDTO.getQuantity());
+        if (product.getStock() == 0) {
+          product.setAvailable(Boolean.FALSE);
+        }
+
         addedItems.add(basketItemDTO);
 
         BasketItem basketItem =
@@ -131,15 +149,14 @@ public class BasketService {
   }
 
   public BasketDTO removeBasketItems(String basketId, List<String> removedBasketItemIds) {
-    Optional<Basket> basketOptional = basketRepository.findById(UUID.fromString(basketId));
-    if (basketOptional.isEmpty()) {
-      throw new BasketNotFoundException(basketId);
-    }
-
-    Basket basket = basketOptional.get();
+    Basket basket =
+        basketRepository
+            .findById(UUID.fromString(basketId))
+            .orElseThrow(() -> new BasketNotFoundException(basketId));
     basket
         .getBasketItems()
         .removeIf(basketItem -> removedBasketItemIds.contains(basketItem.getId().toString()));
+
     return basketRepository.save(basket).toDto();
   }
 
