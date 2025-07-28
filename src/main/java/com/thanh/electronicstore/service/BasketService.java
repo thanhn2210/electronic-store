@@ -23,7 +23,6 @@ import java.util.UUID;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.antlr.v4.runtime.misc.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -54,7 +53,7 @@ public class BasketService {
     return basket.toDto();
   }
 
-  public String createBasket(BasketDTO basketDTO) {
+  public BasketDTO createBasket(BasketDTO basketDTO) {
     Basket basket = new Basket();
     basket.setStatus(BasketStatus.ACTIVE);
 
@@ -84,12 +83,11 @@ public class BasketService {
 
     basket.setBasketItems(basketItems);
 
-    return String.valueOf(basketRepository.save(basket).getId());
+    return basketRepository.save(basket).toDto();
   }
 
   @Transactional
-  public Pair<List<BasketItemDTO>, List<BasketItemDTO>> addBasketItems(
-      String basketId, List<BasketItemDTO> addBasketItems) {
+  public BasketDTO addBasketItems(String basketId, List<BasketItemDTO> addBasketItems) {
     lock.lock();
 
     try {
@@ -125,14 +123,14 @@ public class BasketService {
         basket.getBasketItems().add(basketItem);
       }
 
-      basketRepository.saveAndFlush(basket);
-      return new Pair<>(skippedItems, addedItems);
+      Basket savedBasket = basketRepository.saveAndFlush(basket);
+      return savedBasket.toDto();
     } finally {
       lock.unlock();
     }
   }
 
-  public void removeBasketItems(String basketId, List<String> removedBasketItemIds) {
+  public BasketDTO removeBasketItems(String basketId, List<String> removedBasketItemIds) {
     Optional<Basket> basketOptional = basketRepository.findById(UUID.fromString(basketId));
     if (basketOptional.isEmpty()) {
       throw new BasketNotFoundException(basketId);
@@ -142,7 +140,7 @@ public class BasketService {
     basket
         .getBasketItems()
         .removeIf(basketItem -> removedBasketItemIds.contains(basketItem.getId().toString()));
-    basketRepository.save(basket);
+    return basketRepository.save(basket).toDto();
   }
 
   public ReceiptDTO calculateReceipt(String basketId) {

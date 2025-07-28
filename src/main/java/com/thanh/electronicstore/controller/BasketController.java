@@ -29,23 +29,23 @@ public class BasketController {
   }
 
   @PostMapping
-  public ResponseEntity<String> createBasket(@RequestBody BasketDTO basketDTO) {
-    String createdBasketId = basketService.createBasket(basketDTO);
-    return ResponseEntity.status(HttpStatus.CREATED).body(createdBasketId);
+  public ResponseEntity<BasketDTO> createBasket(@RequestBody BasketDTO basketDTO) {
+    BasketDTO basket = basketService.createBasket(basketDTO);
+    return ResponseEntity.status(HttpStatus.CREATED).body(basket);
   }
 
   @PostMapping("/{id}/add-items")
-  public ResponseEntity<Void> addItems(
+  public ResponseEntity<BasketDTO> addItems(
       @PathVariable String id, @RequestBody List<BasketItemDTO> basketItemDTOs) {
-    basketService.addBasketItems(id, basketItemDTOs);
-    return ResponseEntity.status(HttpStatus.OK).build();
+    BasketDTO basketDTO = basketService.addBasketItems(id, basketItemDTOs);
+    return ResponseEntity.ok(basketDTO);
   }
 
   @PostMapping("/{id}/delete-items")
-  public ResponseEntity<Void> removeItems(
+  public ResponseEntity<BasketDTO> removeItems(
       @PathVariable String id, @RequestBody List<String> basketItemIds) {
-    basketService.removeBasketItems(id, basketItemIds);
-    return ResponseEntity.status(HttpStatus.OK).build();
+    BasketDTO basketDTO = basketService.removeBasketItems(id, basketItemIds);
+    return ResponseEntity.ok(basketDTO);
   }
 
   @GetMapping("/{id}/calculate-receipt")

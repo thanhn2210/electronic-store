@@ -9,8 +9,10 @@ import static org.mockito.Mockito.when;
 import com.thanh.electronicstore.dto.BasketItemDTO;
 import com.thanh.electronicstore.exception.BasketAlreadyCheckedOutException;
 import com.thanh.electronicstore.model.Basket;
+import com.thanh.electronicstore.model.BasketItem;
 import com.thanh.electronicstore.model.BasketStatus;
 import com.thanh.electronicstore.model.Product;
+import com.thanh.electronicstore.repository.BasketItemRepository;
 import com.thanh.electronicstore.repository.BasketRepository;
 import com.thanh.electronicstore.service.BasketService;
 import com.thanh.electronicstore.service.ProductService;
@@ -28,6 +30,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class BasketServiceTest {
 
   @Mock private BasketRepository basketRepository;
+  @Mock private BasketItemRepository basketItemRepository;
 
   @Mock private ProductService productService;
 
@@ -49,14 +52,25 @@ class BasketServiceTest {
 
     BasketItemDTO basketItemDTO =
         BasketItemDTO.builder()
+            .id(String.valueOf(UUID.randomUUID()))
             .productId(productId.toString())
-            .basketId(String.valueOf(basketId))
+            .basketId(basketId.toString())
             .quantity(2)
             .build();
 
     when(basketRepository.findById(basketId)).thenReturn(Optional.of(basket));
-    when(productService.getProductEntityById(String.valueOf(productId))).thenReturn(product);
-
+    when(productService.getProductEntityById(productId.toString())).thenReturn(product);
+    when(basketRepository.saveAndFlush(any(Basket.class)))
+        .thenAnswer(
+            invocation -> {
+              Basket basketArg = invocation.getArgument(0);
+              for (BasketItem item : basketArg.getBasketItems()) {
+                if (item.getId() == null) {
+                  item.setId(UUID.randomUUID());
+                }
+              }
+              return basketArg;
+            });
     basketService.addBasketItems(basketId.toString(), List.of(basketItemDTO));
 
     // Assert
@@ -66,7 +80,6 @@ class BasketServiceTest {
 
   @Test
   void shouldFailWhenAddingItemWithInsufficientStock() {
-    // Arrange
     UUID basketId = UUID.randomUUID();
     UUID productId = UUID.randomUUID();
 
@@ -88,6 +101,7 @@ class BasketServiceTest {
 
     when(basketRepository.findById(basketId)).thenReturn(Optional.of(basket));
     when(productService.getProductEntityById(String.valueOf(productId))).thenReturn(product);
+    when(basketRepository.saveAndFlush(any(Basket.class))).thenReturn(basket);
 
     basketService.addBasketItems(basketId.toString(), List.of(basketItemDTO));
 
@@ -144,10 +158,15 @@ class BasketServiceTest {
             .build();
 
     BasketItemDTO item1 =
-        BasketItemDTO.builder().productId(product1Id.toString()).quantity(2).build();
+        BasketItemDTO.builder()
+            .id(String.valueOf(UUID.randomUUID()))
+            .productId(product1Id.toString())
+            .quantity(2)
+            .build();
 
     BasketItemDTO item2 =
         BasketItemDTO.builder()
+            .id(String.valueOf(UUID.randomUUID()))
             .productId(product2Id.toString())
             .quantity(5) // Insufficient stock
             .build();
@@ -155,7 +174,17 @@ class BasketServiceTest {
     when(basketRepository.findById(basketId)).thenReturn(Optional.of(basket));
     when(productService.getProductEntityById(String.valueOf(product1Id))).thenReturn(product1);
     when(productService.getProductEntityById(String.valueOf(product2Id))).thenReturn(product2);
-
+    when(basketRepository.saveAndFlush(any(Basket.class)))
+        .thenAnswer(
+            invocation -> {
+              Basket basketArg = invocation.getArgument(0);
+              for (BasketItem item : basketArg.getBasketItems()) {
+                if (item.getId() == null) {
+                  item.setId(UUID.randomUUID());
+                }
+              }
+              return basketArg;
+            });
     basketService.addBasketItems(basketId.toString(), List.of(item1, item2));
 
     assertEquals(8, product1.getStock());
