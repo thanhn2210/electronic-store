@@ -83,7 +83,13 @@ curl --request POST \
 
 #### Remove items from basket:
 ```bash
-
+curl --request POST \
+  --url http://localhost:8080/baskets/{BASKET_ID}/delete-items \
+  --header 'Content-Type: application/json' \
+  --data '[
+  "BASKET_ITEM_ID_1",
+  "BASKET_ITEM_ID_2"
+]'
 ```
 ## How to run tests:
 ```bash
